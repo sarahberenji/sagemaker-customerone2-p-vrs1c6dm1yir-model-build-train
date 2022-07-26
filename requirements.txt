@@ -1,0 +1,12 @@
+boto3>=1.20.21
+sagemaker>=2.82.2<3.0.0
+    # via -r requirements.in
+sagemaker[local]
+smdebug-rulesconfig
+pandas
+sklearn
+seaborn
+matplotlib
+numpy
+six~=1.15
+testresources

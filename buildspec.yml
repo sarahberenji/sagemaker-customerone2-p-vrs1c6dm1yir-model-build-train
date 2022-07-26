@@ -1,0 +1,55 @@
+version: 0.2
+env:
+  shell: /bin/sh
+  variables:
+    PROCESSING_INSTANCE_TYPE: "ml.m5.xlarge"
+  parameter-store:
+    CODE_ARTIFACT_DOMAIN: "codeartifact-domain-name"
+    DOMAIN_OWNER: "codeartifact-domain-owner"
+    CODE_ARTIFACT_REPO: "codeartifact-shared-repo-name"
+    DATA_BUCKET_ENV : "mlops-dev-data-bucket-name"
+    MODEL_BUCKET : "mlops-dev-model-bucket-name"
+    EBS_KMS_KEY_ARN: "mlops-dev-kms-ebs-key-arn"
+    S3_KMS_KEY_ID: "mlops-dev-kms-s3-key-arn"
+    SM_SG: "mlops-dev-sagemaker-sg-ids"
+    SM_SUBNETS: "mlops-dev-private-subnet-ids"
+    TRUSTED_KINESIS_ACCOUNT: "dev-TrustedDefaultKinesisAccount"
+phases:
+  install:
+    runtime-versions:
+      python: 3.8
+    commands:
+      - aws codeartifact login --tool pip --domain ${CODE_ARTIFACT_DOMAIN} --domain-owner ${DOMAIN_OWNER} --repository ${CODE_ARTIFACT_REPO}
+      - pip install --upgrade --force-reinstall . awscli==1.22.99
+      - pip install --disable-pip-version-check -q sagemaker==2.82.2 boto3==1.21.42
+  pre_build:
+    commands:
+      - export PYTHONUNBUFFERED=TRUE
+      - export SAGEMAKER_PROJECT_NAME_ID="${SAGEMAKER_PROJECT_NAME}-${SAGEMAKER_PROJECT_ID}"
+      - export SOURCE_HEADHASH=${CODEBUILD_RESOLVED_SOURCE_VERSION:0:7}
+      - echo "Current revision short headhash is ${SOURCE_HEADHASH}"
+      - export SOURCE_SCRIPTS_PATH="s3://${MODEL_BUCKET}/lifecycle/max/${SAGEMAKER_PROJECT_NAME}/${SOURCE_HEADHASH}/input/source_scripts"
+      - aws s3 cp ./source_scripts "${SOURCE_SCRIPTS_PATH}/" --recursive
+      - mkdir temp
+      - echo "Create model package group if it doesnt exist"
+      - MODEL_PACKAGE_GROUP_NAME="${SAGEMAKER_PROJECT_NAME}-inference-pipeline"
+      - . scripts/create-model-package-group.sh
+  build:
+    commands:
+      - |
+        run-pipeline \
+          --module-name ml_pipelines.training.pipeline \
+          --role-arn $SAGEMAKER_PIPELINE_ROLE_ARN \
+          --tags "[{\"Key\":\"sagemaker:project-name\", \"Value\":\"${SAGEMAKER_PROJECT_NAME}\"}, {\"Key\":\"sagemaker:project-id\", \"Value\":\"${SAGEMAKER_PROJECT_ID}\"}, {\"Key\":\"EnvironmentName\", \"Value\":\"${ENV_NAME}\"}, {\"Key\":\"EnvironmentType\", \"Value\":\"${ENV_TYPE}\"}]" \
+          --kwargs "{\"region\":\"${AWS_REGION}\",\"project_name\":\"${SAGEMAKER_PROJECT_NAME}\",\"pipeline_name\":\"${SAGEMAKER_PROJECT_NAME_ID}-training\",\"model_package_group_name\":\"${SAGEMAKER_PROJECT_NAME_ID}\",\"base_job_prefix\":\"${SAGEMAKER_PROJECT_NAME_ID}\", \"revision\":\"${SOURCE_HEADHASH}\", \"source_scripts_path\":\"${SOURCE_SCRIPTS_PATH}\"}"
+      - . scripts/generate-and-register-inference-pipeline.sh
+  post_build:
+    commands:
+      - bash -c "if [ \"$CODEBUILD_BUILD_SUCCEEDING\" == \"0\" ]; then exit 1; fi"
+      - echo Build stage successfully completed on `date`
+      - echo ">> Create a test run of the inference pipeline registered in model registry"
+      - PIPELINE_NAME="${SAGEMAKER_PROJECT_NAME_ID}-inference"
+      - PIPELINE_DISPLAY_NAME="${SAGEMAKER_PROJECT_NAME_ID}-inference"
+      - . scripts/get-pipeline-location.sh "$MODEL_PACKAGE_GROUP_NAME" "PendingManualApproval"
+      - . scripts/create-update-pipeline.sh
+      - . scripts/start-pipeline.sh
