@@ -99,7 +99,8 @@ def test_pipelines_standard_model():
     env_data = mock_environment_data()
     sagemaker_session = sagemaker_local_session()
     base_dir = os.getcwd()
-    source_scripts_path = "s3://some-bucket/source_scripts"
+    # source_scripts_path = "s3://some-bucket/source_scripts"
+    source_scripts_path = "../source_scripts"
     pipeline = standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_package_group_name,
                                        pipeline_name, region, sagemaker_session, base_dir,source_scripts_path)
     from unittest.mock import Mock

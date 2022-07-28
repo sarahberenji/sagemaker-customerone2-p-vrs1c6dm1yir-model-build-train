@@ -10,7 +10,6 @@ Implements a get_pipeline(**kwargs) method.
 """
 import os
 import json
-
 from ml_pipelines.training.models.standard_model import standard_model_pipeline
 from ml_pipelines.utils.environment import get_session, environment_data
 
@@ -24,20 +23,6 @@ def list_files(startpath):
         for f in files:
             print('{}{}'.format(subindent, f))
 
-BASE_DIR = os.path.dirname(os.path.realpath(__file__))
-try:
-    print("##### OS CODEBUILD ENV")
-    print(os.environ["CODEBUILD_SRC_DIR"])
-    list_files(os.environ["CODEBUILD_SRC_DIR"])
-except:
-    print("no codebuild env")
-print("#### Current Working Dir")
-print(os.getcwd())
-list_files(os.getcwd())
-print("#### BASE_DIR")
-print(BASE_DIR)
-list_files(BASE_DIR)
-
 
 def get_pipeline(
         region,
@@ -46,9 +31,7 @@ def get_pipeline(
         model_package_group_name="AbalonePackageGroup",
         pipeline_name="AbalonePipeline",
         base_job_prefix="Abalone",
-        revision="no-revision-provided",
-
-):
+        revision="no-revision-provided",):
     """Gets a SageMaker ML Pipeline instance working with on abalone data.
 
     Args:
@@ -61,12 +44,12 @@ def get_pipeline(
 
     # get env data
     env_data = environment_data(project_name)
-    print(f"Environment data:\n{json.dumps(env_data, indent=2)}")
+    print(f"Sarah: Environment data:\n{json.dumps(env_data, indent=2)}")
 
     sagemaker_session, sagemaker_client = get_session(region, env_data["DataBucketName"])
     default_bucket = sagemaker_session.default_bucket()
     base_dir = os.getcwd()
-    print(f"Creating the pipeline '{pipeline_name}':")
+    print(f"Sarah: Creating the pipeline '{pipeline_name}':")
     print(f"Parameters:{region}\n{env_data['SecurityGroups']}\n{env_data['SubnetIds']}\n{env_data['ProcessingRole']}\n\
     {env_data['TrainingRole']}\n{env_data['DataBucketName']}\n{env_data['ModelBucketName']}\n{model_package_group_name}\n\
     {pipeline_name}\n{base_job_prefix}")
@@ -82,5 +65,20 @@ def get_pipeline(
         base_dir=base_dir,
         source_scripts_path=source_scripts_path,
         project=project_name,
-        revision = revision)
+        revision=revision)
     return pipeline
+
+# TODO: Sarah, What does this part check?
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+try:
+    print("##### OS CODEBUILD ENV")
+    print(os.environ["CODEBUILD_SRC_DIR"])
+    list_files(os.environ["CODEBUILD_SRC_DIR"])
+except:
+    print("no codebuild env")
+print("#### Current Working Dir")
+print(os.getcwd())
+list_files(os.getcwd())
+print("#### BASE_DIR")
+print(BASE_DIR)
+list_files(BASE_DIR)

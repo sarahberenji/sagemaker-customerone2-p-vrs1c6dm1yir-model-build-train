@@ -19,20 +19,22 @@ from sagemaker.dataset_definition.inputs import (
 )
 from datetime import datetime
 import time
+
+
 def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_package_group_name, pipeline_name, region,
                             sagemaker_session, base_dir, source_scripts_path, project = "standard_model", revision = "none", purpose = "p1033" ):
     # parameters for pipeline execution
-    model_approval_status, processing_instance_count, processing_instance_type, training_instance_type = sagemaker_pipeline_parameters(
-        data_bucket=default_bucket)
-    database = ParameterString(name="DataBase", default_value="ml-test-datasets_rl" )
-    table = ParameterString(name="AbaloneTable", default_value="ml_abalone" )
+    model_approval_status, processing_instance_count, processing_instance_type, training_instance_type = sagemaker_pipeline_parameters(data_bucket=default_bucket)
+    # TODO: Sarah what are the following parameters? How do I set them dynamically? Shouldn't they go to the sagemaker_pipeline_parameters() method too?
+    database = ParameterString(name="DataBase", default_value="customerone_mock_data_rl")
+    table = ParameterString(name="AbaloneTable", default_value="master")
     filter = ParameterString(name="FilterRings", default_value="disabled")
     time_path = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     trigger_id = ParameterString(name="TriggerID", default_value="0000000000") #from codebuild - use CODEBUILD_BUILD_ID env variable parsed after ":" The CodeBuild ID of the build (for example, codebuild-demo-project:b1e6661e-e4f2-4156-9ab9-82a19EXAMPLE).
     nowgmt = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
     execution_time = ParameterString(name="ExecutionTime", default_value=nowgmt)
 
-# configure network for encryption, network isolation and VPC configuration
+    # configure network for encryption, network isolation and VPC configuration
     # Since the preprocessor job takes the data from S3, enable_network_isolation must be set to False
     # see https://github.com/aws/amazon-sagemaker-examples/issues/1689
     network_config = NetworkConfig(
@@ -125,16 +127,12 @@ def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_pac
 
 
 def sagemaker_pipeline_parameters(data_bucket):
+    # TODO: Sarah: input argument is not used!
+    # TODO: Sarah: Shouldn't we pass our choices? model_approval_status will always be pending?!
     processing_instance_count = ParameterInteger(name="ProcessingInstanceCount", default_value=1)
-    processing_instance_type = ParameterString(
-        name="ProcessingInstanceType", default_value="ml.m5.xlarge"
-    )
-    training_instance_type = ParameterString(
-        name="TrainingInstanceType", default_value="ml.m5.xlarge"
-    )
-    model_approval_status = ParameterString(
-        name="ModelApprovalStatus", default_value="PendingManualApproval"
-    )
+    processing_instance_type = ParameterString(name="ProcessingInstanceType", default_value="ml.m5.xlarge")
+    training_instance_type = ParameterString(name="TrainingInstanceType", default_value="ml.m5.xlarge")
+    model_approval_status = ParameterString(name="ModelApprovalStatus", default_value="PendingManualApproval")
 
     return model_approval_status, processing_instance_count, processing_instance_type, training_instance_type
 
@@ -162,7 +160,7 @@ def preprocessing(base_job_prefix,
         framework_version="0.23-1",
         instance_type=processing_instance_type,
         instance_count=processing_instance_count,
-        base_job_name=f"{base_job_prefix}/sklearn-abalone-preprocess",
+        base_job_name=f"{base_job_prefix}/sklearn-c1-xsell--preprocess",
         sagemaker_session=sagemaker_session,
         role=env_data["ProcessingRole"],
         network_config=network_config,
@@ -171,7 +169,7 @@ def preprocessing(base_job_prefix,
     )
 
     step_process = ProcessingStep(
-        name="PreprocessAbaloneData",
+        name="PreprocessC1XsellData",
         processor=sklearn_processor,
         outputs=[
             ProcessingOutput(
