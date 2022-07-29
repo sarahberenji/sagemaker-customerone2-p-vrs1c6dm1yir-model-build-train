@@ -6,7 +6,6 @@ import subprocess
 import sys
 from botocore.config import Config
 import boto3
-import awswrangler as wr
 
 import numpy as np
 import pandas as pd
@@ -14,9 +13,6 @@ from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from source_scripts.preprocessing.utils_determine_feature_type import determine_feature_data_types
-from source_scripts.preprocessing.utils_split import make_splits, split_data, make_subsplit
-from source_scripts.preprocessing.utils_reading_data import to_pandas
 
 
 # To easily add packages at runtime from codeartifact, you can use this method. A more graceful way is to install packages in
@@ -58,6 +54,11 @@ print("Sarah: installing pip packages")
 install("awswrangler")
 install("category-encoders")
 install("imbalanced-learn")
+
+import awswrangler as wr
+from .utils_determine_feature_type import determine_feature_data_types
+from .utils_split import make_splits, split_data, make_subsplit
+from .utils_reading_data import to_pandas
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
