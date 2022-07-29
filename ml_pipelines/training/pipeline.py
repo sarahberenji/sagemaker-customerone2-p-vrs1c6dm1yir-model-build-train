@@ -54,6 +54,7 @@ def get_pipeline(
     {env_data['TrainingRole']}\n{env_data['DataBucketName']}\n{env_data['ModelBucketName']}\n{model_package_group_name}\n\
     {pipeline_name}\n{base_job_prefix}")
 
+    print("Sarah: pipeline.py > get_pipeline() > calling standard_model_pipeline()")
     pipeline = standard_model_pipeline(
         base_job_prefix=base_job_prefix,
         default_bucket=default_bucket,

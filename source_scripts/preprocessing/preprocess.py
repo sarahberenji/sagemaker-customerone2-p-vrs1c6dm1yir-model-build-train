@@ -47,12 +47,14 @@ def auth_codeartifact(mlops_domain='cirrus-ml-ds-domain', domain_owner='81373655
 
 
 def install(package):
+    print(f"Sarah: install package = {package}")
     #installs package with pip install
     subprocess.run(["pip", "install", package], capture_output=True)
 
 
 auth_codeartifact()
 # TODO: Sarah, why here?! what about the requirements.txt file? Where is it used?
+print("Sarah: installing pip packages")
 install("awswrangler")
 install("category-encoders")
 install("imbalanced-learn")

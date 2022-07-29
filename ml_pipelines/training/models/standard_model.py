@@ -24,10 +24,11 @@ import time
 def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_package_group_name, pipeline_name, region,
                             sagemaker_session, base_dir, source_scripts_path, project = "standard_model", revision = "none", purpose = "p1033" ):
     # parameters for pipeline execution
+    print("Sarah: Start of standard_model_pipeline()")
     model_approval_status, processing_instance_count, processing_instance_type, training_instance_type = sagemaker_pipeline_parameters(data_bucket=default_bucket)
     # TODO: Sarah what are the following parameters? How do I set them dynamically? Shouldn't they go to the sagemaker_pipeline_parameters() method too?
     database = ParameterString(name="DataBase", default_value="customerone_mock_data_rl")
-    table = ParameterString(name="AbaloneTable", default_value="master")
+    table = ParameterString(name="AbaloneTable", default_value="master") # ??????
     filter = ParameterString(name="FilterRings", default_value="disabled")
     time_path = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     trigger_id = ParameterString(name="TriggerID", default_value="0000000000") #from codebuild - use CODEBUILD_BUILD_ID env variable parsed after ":" The CodeBuild ID of the build (for example, codebuild-demo-project:b1e6661e-e4f2-4156-9ab9-82a19EXAMPLE).
@@ -42,6 +43,7 @@ def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_pac
         security_group_ids=env_data["SecurityGroups"],
         subnets=env_data["SubnetIds"],
         encrypt_inter_container_traffic=True)
+    print(f"Sarah: standard_model_pipeline > network_config: {network_config}")
     data_base_path="s3://{}/lifecycle/60d/{}/{}/{}/{}/output/training".format(env_data["DataBucketName"], project, revision, time_path, purpose)
     step_process, preprocessing_script = preprocessing(
         base_job_prefix=base_job_prefix,
@@ -133,6 +135,7 @@ def sagemaker_pipeline_parameters(data_bucket):
     processing_instance_type = ParameterString(name="ProcessingInstanceType", default_value="ml.m5.xlarge")
     training_instance_type = ParameterString(name="TrainingInstanceType", default_value="ml.m5.xlarge")
     model_approval_status = ParameterString(name="ModelApprovalStatus", default_value="PendingManualApproval")
+    print("Sarah: standard_model_pipeline > o- sagemaker_pipeline_parameters: done")
 
     return model_approval_status, processing_instance_count, processing_instance_type, training_instance_type
 
@@ -153,6 +156,7 @@ def preprocessing(base_job_prefix,
                   filter,
                   execution_time
                   ):
+    print("Sarah: Start of standard_model_pipeline > preprocessing()")
     preprocessing_script = "{}/preprocessing/preprocess.py".format(source_scripts_path)
 
     # processing step for feature engineering
@@ -195,11 +199,14 @@ def preprocessing(base_job_prefix,
             "--filter", filter
         ],
     )
+
+    print("Sarah: End of standard_model_pipeline > preprocessing()")
     return step_process, preprocessing_script
 
 
 def training_tasks(base_job_prefix, env_data, image_uri, network_config, sagemaker_session, step_process,
                    training_instance_type, model_path):
+    print("Sarah: standard_model_pipeline > Start of training_tasks()")
     xgb_train = Estimator(
         image_uri=image_uri,
         instance_type=training_instance_type,
@@ -243,6 +250,7 @@ def training_tasks(base_job_prefix, env_data, image_uri, network_config, sagemak
             ),
         },
     )
+    print("Sarah: standard_model_pipeline > End of training_tasks()")
     return step_train, xgb_train
 
 

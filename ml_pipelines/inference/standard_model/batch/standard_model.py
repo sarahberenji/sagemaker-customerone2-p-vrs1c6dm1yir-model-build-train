@@ -146,8 +146,6 @@ def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_pac
     return pipeline
 
 
-
-
 def preprocessing(base_job_prefix,
                   network_config,
                   processing_instance_count,
@@ -196,8 +194,8 @@ def preprocessing(base_job_prefix,
         ],
     )
 
-
     return step_process
+
 
 def create_model_tasks(sagemaker_session,
                        model_metadata, processing_role, vpc_config,
