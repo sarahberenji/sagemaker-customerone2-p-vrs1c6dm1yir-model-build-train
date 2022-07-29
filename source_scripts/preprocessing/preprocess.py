@@ -7,6 +7,7 @@ import sys
 from botocore.config import Config
 import boto3
 
+import os
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
@@ -48,6 +49,16 @@ def install(package):
     subprocess.run(["pip", "install", package], capture_output=True)
 
 
+def list_files(startpath):
+    for root, dirs, files in os.walk(startpath):
+        print(f"list_files > root={root}, dirs={dirs}, files={files}")
+        level = root.replace(startpath, '').count(os.sep)
+        indent = ' ' * 4 * (level)
+        print('{}{}/'.format(indent, os.path.basename(root)))
+        subindent = ' ' * 4 * (level + 1)
+        for f in files:
+            print('{}{}'.format(subindent, f))
+
 auth_codeartifact()
 # TODO: Sarah, why here?! what about the requirements.txt file? Where is it used?
 print("Sarah: installing pip packages")
@@ -56,7 +67,23 @@ install("category-encoders")
 install("imbalanced-learn")
 
 import awswrangler as wr
-from .utils_determine_feature_type import determine_feature_data_types
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+print(f"test: BASE_DIR={BASE_DIR}")
+try:
+    print("test:##### OS CODEBUILD ENV")
+    print(os.environ["CODEBUILD_SRC_DIR"])
+    list_files(os.environ["CODEBUILD_SRC_DIR"])
+except:
+    print("test: no codebuild env")
+print(f"test:#### Current Working Dir is '{os.getcwd()}'")
+# list_files(os.getcwd())
+print("test: list files under /opt/ml/processin, is it the same as BASE_DIR??")
+print("test: #### BASE_DIR list_files")
+list_files(BASE_DIR)
+print("test: #### list_files under /opt/ml/processing")
+list_files('/opt/ml/processing')
+
+from source_scripts.preprocessing.utils_determine_feature_type import determine_feature_data_types
 from .utils_split import make_splits, split_data, make_subsplit
 from .utils_reading_data import to_pandas
 
@@ -197,14 +224,14 @@ if __name__ == "__main__":
         sys.exit("missing supported context type")
 
 
-feature_columns_names = [
-    "sex",
-    "length",
-    "diameter",
-    "height",
-    "whole_weight",
-    "shucked_weight",
-    "viscera_weight",
-    "shell_weight",
-]
+# feature_columns_names = [
+#     "sex",
+#     "length",
+#     "diameter",
+#     "height",
+#     "whole_weight",
+#     "shucked_weight",
+#     "viscera_weight",
+#     "shell_weight",
+# ]
 

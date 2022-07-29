@@ -77,9 +77,6 @@ try:
     list_files(os.environ["CODEBUILD_SRC_DIR"])
 except:
     print("no codebuild env")
-print("#### Current Working Dir")
-print(os.getcwd())
-list_files(os.getcwd())
-print("#### BASE_DIR")
-print(BASE_DIR)
+print(f"#### Current Working Dir is: {os.getcwd()}")
+print(f"#### BASE_DIR is {BASE_DIR}")
 list_files(BASE_DIR)
