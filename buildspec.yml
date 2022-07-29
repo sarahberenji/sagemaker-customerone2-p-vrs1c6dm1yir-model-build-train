@@ -29,7 +29,7 @@ phases:
       - export SOURCE_HEADHASH=${CODEBUILD_RESOLVED_SOURCE_VERSION:0:7}
       - echo "Current revision short headhash is ${SOURCE_HEADHASH}"
       - export SOURCE_SCRIPTS_PATH="s3://${MODEL_BUCKET}/lifecycle/max/${SAGEMAKER_PROJECT_NAME}/${SOURCE_HEADHASH}/input/source_scripts"
-      - aws s3 cp -R ./source_scripts "${SOURCE_SCRIPTS_PATH}/" --recursive
+      - aws s3 cp ./source_scripts "${SOURCE_SCRIPTS_PATH}/" --recursive
       - mkdir temp
       - echo "Create model package group if it doesnt exist"
       - MODEL_PACKAGE_GROUP_NAME="${SAGEMAKER_PROJECT_NAME}-inference-pipeline"
