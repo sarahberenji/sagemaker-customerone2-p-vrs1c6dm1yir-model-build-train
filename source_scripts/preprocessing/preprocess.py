@@ -119,7 +119,8 @@ if __name__ == "__main__":
         f'SELECT * FROM "{args.database}"."{args.table}" {query_filter};',
         database=args.database,
         workgroup=f"{env_type}-athena-workgroup")
-
+    print("Sarah: xsell_dataset is loaded from athena")
+    print(f"type(xsell_dataset) = {type(xsell_dataset)}, xsell_dataset.head():")
     print(xsell_dataset.head())
     print("*****************\n\n")
 
