@@ -175,6 +175,8 @@ def preprocessing(base_job_prefix,
     step_process = ProcessingStep(
         name="PreprocessC1XsellData",
         processor=sklearn_processor,
+        inputs=[ProcessingInput(source=f'{source_scripts_path}/preprocessing/utils/',
+                                destination="/opt/ml/processing/input/code/utils/")],
         outputs=[
             ProcessingOutput(
                 output_name="train",

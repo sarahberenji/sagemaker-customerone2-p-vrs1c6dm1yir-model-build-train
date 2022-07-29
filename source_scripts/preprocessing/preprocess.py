@@ -15,7 +15,6 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 
-
 # To easily add packages at runtime from codeartifact, you can use this method. A more graceful way is to install packages in
 # a container and use that container as the processing container.
 # @todo adjust hardcoded values into fetching from ssm parameters.
@@ -83,9 +82,9 @@ list_files(BASE_DIR)
 print("test: #### list_files under /opt/ml/processing")
 list_files('/opt/ml/processing')
 
-from source_scripts.preprocessing.utils_determine_feature_type import determine_feature_data_types
-from .utils_split import make_splits, split_data, make_subsplit
-from .utils_reading_data import to_pandas
+from utils.utils_determine_feature_type import determine_feature_data_types
+from utils.utils_split import make_splits, make_subsplit
+from utils.utils_reading_data import to_pandas
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
