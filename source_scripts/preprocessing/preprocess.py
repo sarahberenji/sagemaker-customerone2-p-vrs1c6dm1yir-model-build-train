@@ -8,12 +8,7 @@ from botocore.config import Config
 import boto3
 
 import os
-import numpy as np
-import pandas as pd
-from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+
 
 # To easily add packages at runtime from codeartifact, you can use this method. A more graceful way is to install packages in
 # a container and use that container as the processing container.
@@ -62,8 +57,8 @@ auth_codeartifact()
 # TODO: Sarah, why here?! what about the requirements.txt file? Where is it used?
 print("Sarah: installing pip packages")
 install("awswrangler")
-install("category-encoders")
-install("imbalanced-learn")
+# install("category-encoders")
+# install("imbalanced-learn")
 print(os.system("pip list"))
 
 import awswrangler as wr
@@ -83,9 +78,16 @@ list_files(BASE_DIR)
 print("test: #### list_files under /opt/ml/processing")
 list_files('/opt/ml/processing')
 
-from utils.utils_determine_feature_type import determine_feature_data_types
-from utils.utils_split import make_splits, make_subsplit
-from utils.utils_reading_data import convert_to_pandas
+#
+import numpy as np
+import pandas as pd
+# from sklearn.compose import ColumnTransformer
+# from sklearn.impute import SimpleImputer
+# from sklearn.pipeline import Pipeline
+# from sklearn.preprocessing import StandardScaler, OneHotEncoder
+# from utils.utils_determine_feature_type import determine_feature_data_types
+# from utils.utils_split import make_splits, make_subsplit
+# from utils.utils_reading_data import convert_to_pandas
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -122,107 +124,107 @@ if __name__ == "__main__":
         workgroup=f"{env_type}-athena-workgroup")
     print("Sarah: xsell_dataset is loaded from athena")
     print(f"type(xsell_dataset) = {type(xsell_dataset)}, xsell_dataset.head():")
-    print(xsell_dataset.head())
-    print("*****************\n\n")
-
-    target_col_name = 'tgt_xsell_cust_voice_to_fixed'
-
-    spine_params_determine_feature_data_types = {'keys': ['customer_id'],
-                                                 'date_column': 'current_dt',
-                                                 'product_holdings_filter': {'product_category': 'fixedbroadband'},
-                                                 'is_deepsell': 'N'}
-
-    target_params_determine_feature_data_types = {'target_variable_column': 'tgt_xsell_cust_voice_to_fixed'
-        , 'lead_time_window': '1d'
-        , 'target_window': '45d'
-        , 'product_activation_filter': {'product_sub_category': 'voice'}
-        , 'campaign_keys': ['customer_id']
-        , 'campaign_filter': {'campaign_name': ["C-452-O-06 Korsförsäljning Telia Life 2.0 - Sälja mobilt"
-            , "b2c_cross-sell_pp_crossSellPpToBb"
-            , "b2c_cross-sell_pp_crossSellPpToBb_oldContent"
-            , "b2c_cross-sell_pp_crossSellPpToBb_REM1"
-            , "C-700-O-03 Cross-sell Mobile to Broadband customers (TM only)"
-            , "C-700-O-01 Cross-sell Mobile to Broadband customers (A)"
-            , "C-752-O GEOF 2021 - X-sell PP"
-            , "C-652-O Black Friday Erbjudande 2019  Mobilt till BB-kund - activity 1"
-            , "C-700-O-02 Cross-sell Mobile to Broadband customers (B)"
-            , "b2c_cross-sell_Pp_PpToBb_default"
-            , "C-752-O GEOF 2021 - Xsell PP"
-            , "b2c_cross-sell_Pp_PpToBb_simOnly"
-            , "b2c_cross-sell_Pp_PpToBb_samS215G"
-            , "b2c_cross-sell_Pp_PpToBb_iphone12Mini"
-            , "b2c_cross-sell_Pp_PpToBb_iphoneSE"
-            , "b2c_cross-sell_Pp_PpToBb_iphone12"
-            , "b2c_cross-sell_Pp_PpToBb_samS20FE5G"
-            , "b2c_cross-sell_Pp_PpToBb_sonyXp10lll"
-            , "b2c_cross-sell_Pp_PpToBb_default_short_8pm"
-            , "b2c_cross-sell_Pp_PpToBb_default_8pm"]
-            , 'customer_actioned_flg_column': {'Email': 'actioned_ind'}}}
-
-    # Sarah: is it ok to use xsell_dataset for creating features list?
-    feature_dict = determine_feature_data_types(xsell_dataset,
-                                                spine_params_determine_feature_data_types,
-                                                target_params_determine_feature_data_types)
-    print(f"len(feature_dict)={len(feature_dict)}, \nlen(feature_dict['numeric'])={len(feature_dict['numeric'])}, \nlen(feature_dict['categorical'])={len(feature_dict['categorical'])}")
-
-    features = feature_dict['categorical'] + feature_dict['numeric']
-
-    if args.context == "training":
-        # skipped sample_training_df()
-        # skipped drop_invalid_features()
-        # skipped filter_features()
-
-        # skipped to_pandas() and just filtered the null target rows:
-        df_training = xsell_dataset[xsell_dataset['tgt_xsell_cust_voice_to_fixed'].notnull()]
-        df_training_idx = df_training.reset_index(drop=True)
-        print(f"{df_training.shape}, {df_training_idx.shape}")
-
-        # Splitting data
-        split_train_test = make_splits(df_training_idx, target_col_name)
-        print(f"{df_training.shape}, {df_training_idx.shape}, {split_train_test.shape}")
-        print(f"split_train_test['split'].value_counts(dropna=False) = {split_train_test['split'].value_counts(dropna=False)}")
-        print(f"df_training_idx['split'].value_counts(dropna=False) = {df_training_idx['split'].value_counts(dropna=False)}")
-        print(f"split_train_test['iteration_id'].value_counts(dropna=False) = {split_train_test['iteration_id'].value_counts(dropna=False)}")
-
-        splitter_args = {'test_size': 0.1, 'random_state': 42}
-        subsplit_params = {"iteration_col_name": 'iteration_id', "split_col_name": "split", 'source_split': 'TRAIN',
-                           'target_splits': ['TRAIN', 'CAL']}
-
-        split_train_test_cal = make_subsplit(split_train_test, subsplit_params, splitter_args, target_col_name)
-        print(f"split_train_test_cal['split'].value_counts(dropna=False) = {split_train_test_cal['split'].value_counts(dropna=False)}")
-
-        train = split_train_test_cal[split_train_test_cal['split'] == 'TRAIN']
-        test = split_train_test_cal[split_train_test_cal['split'] == 'TEST']
-        validation = split_train_test_cal[split_train_test_cal['split'] == 'CAL']
-
-        logger.info("Writing out datasets to %s.", base_dir)
-        # TODO: sarah, do we have to store the data as csv files?
-        pd.DataFrame(train).to_csv(f"{base_dir}/train/train.csv", header=False, index=False)
-        pd.DataFrame(validation).to_csv(
-            f"{base_dir}/validation/validation.csv", header=False, index=False
-        )
-        pd.DataFrame(test).to_csv(f"{base_dir}/test/test.csv", header=False, index=False)
-    elif args.context == "inference":
-        print("Some mock processing for now")
-        
-        print(f"execution time (UTC): {args.executiontime}")
-
-        pandas_params = {'include_target': False}
-        spine_params = {'keys': ['customer_id'],
-                        'date_column': 'current_dt',
-                        'product_holdings_filter': {'exact_match': {'product_category': 'fixedbroadband'}},
-                        'is_deepsell': 'N'}
-        ref_date = '2021-06-30'
-        data_dictionary = None
-
-        # inference_master_table = inference_data
-        inference_data = convert_to_pandas(xsell_dataset, pandas_params, spine_params, target_col_name, data_dictionary, features, ref_date)
-        print(f"inference_master_table inference_data.shape = {inference_data.shape}")
-
-        pd.DataFrame(inference_data).to_csv(f"{base_dir}/inference-test/inference-data.csv", header=False, index=False)
-    else:
-        logger.info("missing context, allowed values are training or inference")
-        sys.exit("missing supported context type")
+    # print(xsell_dataset.head())
+    # print("*****************\n\n")
+    #
+    # target_col_name = 'tgt_xsell_cust_voice_to_fixed'
+    #
+    # spine_params_determine_feature_data_types = {'keys': ['customer_id'],
+    #                                              'date_column': 'current_dt',
+    #                                              'product_holdings_filter': {'product_category': 'fixedbroadband'},
+    #                                              'is_deepsell': 'N'}
+    #
+    # target_params_determine_feature_data_types = {'target_variable_column': 'tgt_xsell_cust_voice_to_fixed'
+    #     , 'lead_time_window': '1d'
+    #     , 'target_window': '45d'
+    #     , 'product_activation_filter': {'product_sub_category': 'voice'}
+    #     , 'campaign_keys': ['customer_id']
+    #     , 'campaign_filter': {'campaign_name': ["C-452-O-06 Korsförsäljning Telia Life 2.0 - Sälja mobilt"
+    #         , "b2c_cross-sell_pp_crossSellPpToBb"
+    #         , "b2c_cross-sell_pp_crossSellPpToBb_oldContent"
+    #         , "b2c_cross-sell_pp_crossSellPpToBb_REM1"
+    #         , "C-700-O-03 Cross-sell Mobile to Broadband customers (TM only)"
+    #         , "C-700-O-01 Cross-sell Mobile to Broadband customers (A)"
+    #         , "C-752-O GEOF 2021 - X-sell PP"
+    #         , "C-652-O Black Friday Erbjudande 2019  Mobilt till BB-kund - activity 1"
+    #         , "C-700-O-02 Cross-sell Mobile to Broadband customers (B)"
+    #         , "b2c_cross-sell_Pp_PpToBb_default"
+    #         , "C-752-O GEOF 2021 - Xsell PP"
+    #         , "b2c_cross-sell_Pp_PpToBb_simOnly"
+    #         , "b2c_cross-sell_Pp_PpToBb_samS215G"
+    #         , "b2c_cross-sell_Pp_PpToBb_iphone12Mini"
+    #         , "b2c_cross-sell_Pp_PpToBb_iphoneSE"
+    #         , "b2c_cross-sell_Pp_PpToBb_iphone12"
+    #         , "b2c_cross-sell_Pp_PpToBb_samS20FE5G"
+    #         , "b2c_cross-sell_Pp_PpToBb_sonyXp10lll"
+    #         , "b2c_cross-sell_Pp_PpToBb_default_short_8pm"
+    #         , "b2c_cross-sell_Pp_PpToBb_default_8pm"]
+    #         , 'customer_actioned_flg_column': {'Email': 'actioned_ind'}}}
+    #
+    # # Sarah: is it ok to use xsell_dataset for creating features list?
+    # feature_dict = determine_feature_data_types(xsell_dataset,
+    #                                             spine_params_determine_feature_data_types,
+    #                                             target_params_determine_feature_data_types)
+    # print(f"len(feature_dict)={len(feature_dict)}, \nlen(feature_dict['numeric'])={len(feature_dict['numeric'])}, \nlen(feature_dict['categorical'])={len(feature_dict['categorical'])}")
+    #
+    # features = feature_dict['categorical'] + feature_dict['numeric']
+    #
+    # if args.context == "training":
+    #     # skipped sample_training_df()
+    #     # skipped drop_invalid_features()
+    #     # skipped filter_features()
+    #
+    #     # skipped to_pandas() and just filtered the null target rows:
+    #     df_training = xsell_dataset[xsell_dataset['tgt_xsell_cust_voice_to_fixed'].notnull()]
+    #     df_training_idx = df_training.reset_index(drop=True)
+    #     print(f"{df_training.shape}, {df_training_idx.shape}")
+    #
+    #     # Splitting data
+    #     split_train_test = make_splits(df_training_idx, target_col_name)
+    #     print(f"{df_training.shape}, {df_training_idx.shape}, {split_train_test.shape}")
+    #     print(f"split_train_test['split'].value_counts(dropna=False) = {split_train_test['split'].value_counts(dropna=False)}")
+    #     print(f"df_training_idx['split'].value_counts(dropna=False) = {df_training_idx['split'].value_counts(dropna=False)}")
+    #     print(f"split_train_test['iteration_id'].value_counts(dropna=False) = {split_train_test['iteration_id'].value_counts(dropna=False)}")
+    #
+    #     splitter_args = {'test_size': 0.1, 'random_state': 42}
+    #     subsplit_params = {"iteration_col_name": 'iteration_id', "split_col_name": "split", 'source_split': 'TRAIN',
+    #                        'target_splits': ['TRAIN', 'CAL']}
+    #
+    #     split_train_test_cal = make_subsplit(split_train_test, subsplit_params, splitter_args, target_col_name)
+    #     print(f"split_train_test_cal['split'].value_counts(dropna=False) = {split_train_test_cal['split'].value_counts(dropna=False)}")
+    #
+    #     train = split_train_test_cal[split_train_test_cal['split'] == 'TRAIN']
+    #     test = split_train_test_cal[split_train_test_cal['split'] == 'TEST']
+    #     validation = split_train_test_cal[split_train_test_cal['split'] == 'CAL']
+    #
+    #     logger.info("Writing out datasets to %s.", base_dir)
+    #     # TODO: sarah, do we have to store the data as csv files?
+    #     pd.DataFrame(train).to_csv(f"{base_dir}/train/train.csv", header=False, index=False)
+    #     pd.DataFrame(validation).to_csv(
+    #         f"{base_dir}/validation/validation.csv", header=False, index=False
+    #     )
+    #     pd.DataFrame(test).to_csv(f"{base_dir}/test/test.csv", header=False, index=False)
+    # elif args.context == "inference":
+    #     print("Some mock processing for now")
+    #
+    #     print(f"execution time (UTC): {args.executiontime}")
+    #
+    #     pandas_params = {'include_target': False}
+    #     spine_params = {'keys': ['customer_id'],
+    #                     'date_column': 'current_dt',
+    #                     'product_holdings_filter': {'exact_match': {'product_category': 'fixedbroadband'}},
+    #                     'is_deepsell': 'N'}
+    #     ref_date = '2021-06-30'
+    #     data_dictionary = None
+    #
+    #     # inference_master_table = inference_data
+    #     inference_data = convert_to_pandas(xsell_dataset, pandas_params, spine_params, target_col_name, data_dictionary, features, ref_date)
+    #     print(f"inference_master_table inference_data.shape = {inference_data.shape}")
+    #
+    #     pd.DataFrame(inference_data).to_csv(f"{base_dir}/inference-test/inference-data.csv", header=False, index=False)
+    # else:
+    #     logger.info("missing context, allowed values are training or inference")
+    #     sys.exit("missing supported context type")
 
 
 # feature_columns_names = [
