@@ -1,11 +1,12 @@
 import re
 import pandas as pd
 
-def to_pandas(data, pandas_params, spine_params, target_col, data_dictionary, features, ref_date):
+
+def convert_to_pandas(data, pandas_params, spine_params, target_col, data_dictionary, features, ref_date):
     # def to_pandas(data: DataFrame, pandas_params: Dict[str, Any], spine_params: Dict[str, Any], target_params: Dict[str, Any], data_dictionary: Optional[DataDict] = None, features: List[str] = None, ref_date: Optional[str] = None,) -> pd.DataFrame:
     ref_period = pandas_params.get("ref_period")
     include_target = pandas_params.get("include_target")
-    key_col = to_list(spine_params.get('keys'))
+    key_col = convert_to_list(spine_params.get('keys'))
     date_col = spine_params.get('date_column')
     #     target_col = target_params.get('target_variable_column')
 
@@ -84,7 +85,7 @@ def to_pandas(data, pandas_params, spine_params, target_col, data_dictionary, fe
     return data
 
 
-def to_list(item):
+def convert_to_list(item):
     """
     Wraps an item to a list or returns the existing list
 

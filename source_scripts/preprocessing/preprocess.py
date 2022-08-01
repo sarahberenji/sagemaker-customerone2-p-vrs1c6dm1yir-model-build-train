@@ -64,6 +64,7 @@ print("Sarah: installing pip packages")
 install("awswrangler")
 install("category-encoders")
 install("imbalanced-learn")
+print(os.system("pip list"))
 
 import awswrangler as wr
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -84,7 +85,7 @@ list_files('/opt/ml/processing')
 
 from utils.utils_determine_feature_type import determine_feature_data_types
 from utils.utils_split import make_splits, make_subsplit
-from utils.utils_reading_data import to_pandas
+from utils.utils_reading_data import convert_to_pandas
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -114,7 +115,7 @@ if __name__ == "__main__":
     else:
         query_filter = f'WHERE rings > {args.filter}'
 
-    print(f"\n\nSarah SELECT * FROM \"{args.database}\".\"{args.table}\" {query_filter};\', database=args.database, workgroup=f\"{env_type}-athena-workgroup \n\n")
+    print(f"\n\nSarah SELECT * FROM \"{args.database}\".\"{args.table}\" {query_filter};\', workgroup=f\"{env_type}-athena-workgroup \n\n")
     xsell_dataset = wr.athena.read_sql_query(
         f'SELECT * FROM "{args.database}"."{args.table}" {query_filter};',
         database=args.database,
@@ -215,7 +216,7 @@ if __name__ == "__main__":
         data_dictionary = None
 
         # inference_master_table = inference_data
-        inference_data= to_pandas(xsell_dataset, pandas_params, spine_params, target_col_name, data_dictionary, features, ref_date)
+        inference_data = convert_to_pandas(xsell_dataset, pandas_params, spine_params, target_col_name, data_dictionary, features, ref_date)
         print(f"inference_master_table inference_data.shape = {inference_data.shape}")
 
         pd.DataFrame(inference_data).to_csv(f"{base_dir}/inference-test/inference-data.csv", header=False, index=False)

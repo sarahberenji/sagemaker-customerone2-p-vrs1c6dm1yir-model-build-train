@@ -1,7 +1,7 @@
 from typing import Any, Callable, Dict, Iterable, List, Optional, Union
 
 
-def to_list(item: Union[Any, List[Any]]) -> List[Any]:
+def convert_to_list(item: Union[Any, List[Any]]) -> List[Any]:
     """
     Wraps an item to a list or returns the existing list
 
@@ -38,9 +38,9 @@ def determine_feature_data_types(data, spine_params, target_params):
     # {'target_variable_column': 'tgt_xsell_cust_voice_to_fixed', 'lead_time_window': '1d', 'target_window': '45d', 'product_activation_filter': {'exact_match': {...}}, 'campaign_keys': ['customer_id'], 'campaign_filter': {'exact_match': {...}, 'customer_actioned_flg_column': {...}}}
 
     none_features = (  # ['customer_id', 'current_dt', 'tgt_xsell_cust_voice_to_fixed']
-            to_list(spine_params["keys"]) +
-            to_list(spine_params["date_column"]) +
-            to_list(target_params["target_variable_column"])
+            convert_to_list(spine_params["keys"]) +
+            convert_to_list(spine_params["date_column"]) +
+            convert_to_list(target_params["target_variable_column"])
     )
     #     print(f"none_features = {none_features}\n")
     feature_cols = set(data.columns) - set(none_features)
