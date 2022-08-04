@@ -69,7 +69,7 @@ def get_pipeline(
         revision=revision)
     return pipeline
 
-# TODO: Sarah, What does this part check?
+
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 try:
     print("##### OS CODEBUILD ENV")
