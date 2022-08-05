@@ -63,7 +63,7 @@ def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_pac
         filter=filter,
         execution_time=execution_time
     )
-
+    print("Sarah: step_process is ready")
     # # training step for generating model artifacts (Specify the training container image URI)
     # image_uri = sagemaker.image_uris.retrieve(
     #     framework="xgboost",
@@ -91,19 +91,23 @@ def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_pac
     image_uri = sagemaker.image_uris.retrieve(
         region=region,
         framework="lightgbm",
-        model_id=train_model_id,
-        model_version=train_model_version,
-        image_scope=train_scope,
+        # model_id=train_model_id,
+        # model_version=train_model_version,
+        # image_scope=train_scope,
+        py_version="py3",
         instance_type=training_instance_type,
     )
+    print(f"Sarah: image_uri is ready {image_uri}")
     # Retrieve the training script
     train_source_uri = sagemaker.script_uris.retrieve(model_id=train_model_id,
                                                       model_version=train_model_version,
                                                       script_scope=train_scope)
+    print(f"Sarah: train_source_uri is ready {train_source_uri}")
     # Retrieve the pre-trained model tarball to further fine-tune
     train_model_uri = sagemaker.model_uris.retrieve(model_id=train_model_id,
                                                     model_version=train_model_version,
                                                     model_scope=train_scope)
+    print(f"Sarah: train_model_uri is ready {train_model_uri}")
     model_name = "xsell_cust_voice_to_fixed"
     # Specify the model path where you want to save the models from training:
     model_path = "s3://{}/lifecycle/max/{}/{}/{}/{}/output/training".format(env_data["ModelBucketName"], project, revision, model_name, time_path)
@@ -272,6 +276,7 @@ def training_tasks(base_job_prefix, env_data, image_uri, network_config, sagemak
 
 def training_tasks_lgbm(base_job_prefix, env_data, image_uri, source_uri, model_uri, model_id,train_model_version,
                         network_config, sagemaker_session, step_process, training_instance_type, model_path):
+    print("Srah: Start of training_tasks_lgbm()")
     # Create SageMaker Estimator instance
     lightgbm_train = Estimator(
         image_uri=image_uri,
@@ -302,6 +307,7 @@ def training_tasks_lgbm(base_job_prefix, env_data, image_uri, source_uri, model_
     #     "num_boost_round"
     # ] = "500"  # The same hyperparameter is named as "iterations" for CatBoost
     # print(hyperparameters)
+    print("Sarah: lightgbm_train estimator is ready")
     lightgbm_train.set_hyperparameters(
         num_boost_roun=500,
         objective="reg:linear",
@@ -314,6 +320,7 @@ def training_tasks_lgbm(base_job_prefix, env_data, image_uri, source_uri, model_
         silent=0,
     )
 
+    print("Sarah: lightgbm_train set hyperparametr is done")
     step_train = TrainingStep(
         name="TrainXsellModel",
         estimator=lightgbm_train,
@@ -323,6 +330,7 @@ def training_tasks_lgbm(base_job_prefix, env_data, image_uri, source_uri, model_
         },
     )
 
+    print("Sarah: End of training_tasks_lgbm")
     return step_train, lightgbm_train
 
 
