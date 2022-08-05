@@ -54,7 +54,6 @@ def list_files(startpath):
             print('{}{}'.format(subindent, f))
 
 auth_codeartifact()
-# TODO: Sarah, why here?! what about the requirements.txt file? Where is it used?
 install("awswrangler")
 
 
@@ -69,9 +68,9 @@ import pandas as pd
 # from sklearn.impute import SimpleImputer
 # from sklearn.pipeline import Pipeline
 # from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from utils.utils_determine_feature_type import determine_feature_data_types
-from utils.utils_split import make_splits, make_subsplit
-from utils.utils_reading_data import convert_to_pandas
+from utils.determine_feature_type import determine_feature_data_types
+from utils.split import make_splits, make_subsplit
+from utils.reading_data import convert_to_pandas
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 print(f"test: BASE_DIR={BASE_DIR}")

@@ -48,6 +48,7 @@ def get_session(region, default_bucket):
 
     sagemaker_client = boto_session.client("sagemaker")
     runtime_client = boto_session.client("sagemaker-runtime")
+    print(f"Sarah: ml_pipelines > utiles > environments.py > sagemaker.__version__ is {sagemaker.__version__}")
     return sagemaker.session.Session(
         boto_session=boto_session,
         sagemaker_client=sagemaker_client,
