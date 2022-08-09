@@ -268,7 +268,7 @@ def training_tasks(base_job_prefix, env_data, image_uri, network_config, sagemak
         inputs={
             "train": TrainingInput(s3_data=step_process.properties.ProcessingOutputConfig.Outputs["train"].S3Output.S3Uri, content_type="text/csv",),
             # "validation": TrainingInput(s3_data=step_process.properties.ProcessingOutputConfig.Outputs["validation"].S3Output.S3Uri,content_type="text/csv",),
-            "test": TrainingInput(s3_data=step_process.properties.ProcessingOutputConfig.Outputs["test"].S3Output.S3Uri, content_type="text/csv", ),
+            # "test": TrainingInput(s3_data=step_process.properties.ProcessingOutputConfig.Outputs["test"].S3Output.S3Uri, content_type="text/csv", ),
         },
     )
     print("Sarah: standard_model_pipeline > End of training_tasks()")
