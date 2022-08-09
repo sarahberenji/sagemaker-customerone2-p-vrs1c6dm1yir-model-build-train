@@ -63,66 +63,67 @@ def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_pac
         filter=filter,
         execution_time=execution_time
     )
-    print("Sarah: step_process is ready")
-    # # training step for generating model artifacts (Specify the training container image URI)
-    # image_uri = sagemaker.image_uris.retrieve(
-    #     framework="xgboost",
-    #     region=region,
-    #     version="1.0-1",
-    #     py_version="py3",
-    #     instance_type=training_instance_type,
-    # )
 
-    # model_name = "abalone"
-    # Specify the model path where you want to save the models from training:
-    # model_path = "s3://{}/lifecycle/max/{}/{}/{}/{}/output/training".format(env_data["ModelBucketName"], project, revision, model_name, time_path)
-    # step_train, xgb_train = training_tasks(base_job_prefix=base_job_prefix,
-    #                                        env_data=env_data,
-    #                                        image_uri=image_uri,
-    #                                        network_config=network_config,
-    #                                        sagemaker_session=sagemaker_session,
-    #                                        step_process=step_process,
-    #                                        training_instance_type=training_instance_type,
-    #                                        model_path=model_path
-    #                                        )
-
-    train_model_id, train_model_version, train_scope = "lightgbm-classification-model", "*", "training"
-    # Retrieve the docker image
+    # training step for generating model artifacts (Specify the training container image URI)
     image_uri = sagemaker.image_uris.retrieve(
+        framework="xgboost",
         region=region,
-        framework="lightgbm",
-        # model_id=train_model_id,
-        # model_version=train_model_version,
-        # image_scope=train_scope,
+        version="1.0-1",
         py_version="py3",
         instance_type=training_instance_type,
     )
-    print(f"Sarah: image_uri is ready {image_uri}")
-    # Retrieve the training script
-    train_source_uri = sagemaker.script_uris.retrieve(model_id=train_model_id,
-                                                      model_version=train_model_version,
-                                                      script_scope=train_scope)
-    print(f"Sarah: train_source_uri is ready {train_source_uri}")
-    # Retrieve the pre-trained model tarball to further fine-tune
-    train_model_uri = sagemaker.model_uris.retrieve(model_id=train_model_id,
-                                                    model_version=train_model_version,
-                                                    model_scope=train_scope)
-    print(f"Sarah: train_model_uri is ready {train_model_uri}")
     model_name = "xsell_cust_voice_to_fixed"
     # Specify the model path where you want to save the models from training:
     model_path = "s3://{}/lifecycle/max/{}/{}/{}/{}/output/training".format(env_data["ModelBucketName"], project, revision, model_name, time_path)
-    step_train, lgbm_train = training_tasks_lgbm(base_job_prefix=base_job_prefix,
-                                                env_data=env_data,
-                                                image_uri=image_uri,
-                                                source_uri=train_source_uri,
-                                                model_uri=train_model_uri,
-                                                model_id=train_model_id,
-                                                model_version=train_model_version,
-                                                network_config=network_config,
-                                                sagemaker_session=sagemaker_session,
-                                                step_process=step_process,
-                                                training_instance_type=training_instance_type,
-                                                model_path=model_path)
+    step_train, xgb_train = training_tasks(base_job_prefix=base_job_prefix,
+                                           env_data=env_data,
+                                           image_uri=image_uri,
+                                           network_config=network_config,
+                                           sagemaker_session=sagemaker_session,
+                                           step_process=step_process,
+                                           training_instance_type=training_instance_type,
+                                           model_path=model_path
+                                           )
+
+    # train_model_id, train_model_version, train_scope = "lightgbm-classification-model", "*", "training"
+    # # Retrieve the docker image
+    # # ll -a /opt/conda/envs/jumpstart-env/lib/python3.7/site-packages/sagemaker/image_uri_config
+    # # https://docs.aws.amazon.com/sagemaker/latest/dg/ecr-eu-north-1.html
+    # image_uri = sagemaker.image_uris.retrieve(
+    #     region=region,
+    #     framework="lightgbm",
+    #     # model_id=train_model_id,
+    #     # model_version=train_model_version,
+    #     # image_scope=train_scope,
+    #     py_version="py3",
+    #     instance_type=training_instance_type,
+    # )
+    # print(f"Sarah: image_uri is ready {image_uri}")
+    # # Retrieve the training script
+    # train_source_uri = sagemaker.script_uris.retrieve(model_id=train_model_id,
+    #                                                   model_version=train_model_version,
+    #                                                   script_scope=train_scope)
+    # print(f"Sarah: train_source_uri is ready {train_source_uri}")
+    # # Retrieve the pre-trained model tarball to further fine-tune
+    # train_model_uri = sagemaker.model_uris.retrieve(model_id=train_model_id,
+    #                                                 model_version=train_model_version,
+    #                                                 model_scope=train_scope)
+    # print(f"Sarah: train_model_uri is ready {train_model_uri}")
+    # model_name = "xsell_cust_voice_to_fixed"
+    # # Specify the model path where you want to save the models from training:
+    # model_path = "s3://{}/lifecycle/max/{}/{}/{}/{}/output/training".format(env_data["ModelBucketName"], project, revision, model_name, time_path)
+    # step_train, lgbm_train = training_tasks_lgbm(base_job_prefix=base_job_prefix,
+    #                                             env_data=env_data,
+    #                                             image_uri=image_uri,
+    #                                             source_uri=train_source_uri,
+    #                                             model_uri=train_model_uri,
+    #                                             model_id=train_model_id,
+    #                                             model_version=train_model_version,
+    #                                             network_config=network_config,
+    #                                             sagemaker_session=sagemaker_session,
+    #                                             step_process=step_process,
+    #                                             training_instance_type=training_instance_type,
+    #                                             model_path=model_path)
 
     # processing step for evaluation
     evaluation_path = "s3://{}/lifecycle/max/{}/{}/{}/{}/output/evaluation".format(env_data["ModelBucketName"], project, revision, model_name, time_path)
@@ -138,18 +139,18 @@ def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_pac
                                                                    evaluation_path=evaluation_path
                                                                    )
 
-    postprocessing_script="{}/postprocessing/postprocess.py".format(source_scripts_path)
-    # step_cond = model_register_tasks(evaluation_report,
-    #                                  model_approval_status,
-    #                                  model_metrics,
-    #                                  model_package_group_name,
-    #                                  network_config,
-    #                                  step_eval,
-    #                                  step_train,
-    #                                  xgb_train,
-    #                                  preprocessing_script,
-    #                                  postprocessing_script,
-    #                                  revision)
+    postprocessing_script = "{}/postprocessing/postprocess.py".format(source_scripts_path)
+    step_cond = model_register_tasks(evaluation_report,
+                                     model_approval_status,
+                                     model_metrics,
+                                     model_package_group_name,
+                                     network_config,
+                                     step_eval,
+                                     step_train,
+                                     xgb_train,
+                                     preprocessing_script,
+                                     postprocessing_script,
+                                     revision)
     # pipeline instance
     pipeline = Pipeline(
         name=pipeline_name,
@@ -164,8 +165,7 @@ def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_pac
             table,
             filter
         ],
-        # steps=[step_process, step_train, step_eval, step_cond],
-        steps=[step_process, step_train, step_eval, ],
+        steps=[step_process, step_train, step_eval, step_cond],
         # steps=[step_process],
         sagemaker_session=sagemaker_session,
     )
@@ -213,10 +213,10 @@ def preprocessing(base_job_prefix, env_data, network_config, processing_instance
                 source="/opt/ml/processing/train",
                 destination=training_path
             ),
-            ProcessingOutput(output_name="validation",
-                             source="/opt/ml/processing/validation",
-                             destination=validation_path
-                             ),
+            # ProcessingOutput(output_name="validation",
+            #                  source="/opt/ml/processing/validation",
+            #                  destination=validation_path
+            #                  ),
             ProcessingOutput(output_name="test",
                              source="/opt/ml/processing/test",
                              destination=test_path
@@ -267,7 +267,8 @@ def training_tasks(base_job_prefix, env_data, image_uri, network_config, sagemak
         estimator=xgb_train,
         inputs={
             "train": TrainingInput(s3_data=step_process.properties.ProcessingOutputConfig.Outputs["train"].S3Output.S3Uri, content_type="text/csv",),
-            "validation": TrainingInput(s3_data=step_process.properties.ProcessingOutputConfig.Outputs["validation"].S3Output.S3Uri,content_type="text/csv",),
+            # "validation": TrainingInput(s3_data=step_process.properties.ProcessingOutputConfig.Outputs["validation"].S3Output.S3Uri,content_type="text/csv",),
+            "test": TrainingInput(s3_data=step_process.properties.ProcessingOutputConfig.Outputs["test"].S3Output.S3Uri, content_type="text/csv", ),
         },
     )
     print("Sarah: standard_model_pipeline > End of training_tasks()")

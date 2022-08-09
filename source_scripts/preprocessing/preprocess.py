@@ -186,7 +186,9 @@ if __name__ == "__main__":
         print(f"split_train_test['iteration_id'].value_counts(dropna=False) = {split_train_test['iteration_id'].value_counts(dropna=False)}")
 
         splitter_args = {'test_size': 0.1, 'random_state': 42}
-        subsplit_params = {"iteration_col_name": 'iteration_id', "split_col_name": "split", 'source_split': 'TRAIN',
+        subsplit_params = {"iteration_col_name": 'iteration_id',
+                           "split_col_name": "split",
+                           'source_split': 'TRAIN',
                            'target_splits': ['TRAIN', 'CAL']}
 
         split_train_test_cal = make_subsplit(split_train_test, subsplit_params, splitter_args, target_col_name)
@@ -194,14 +196,12 @@ if __name__ == "__main__":
 
         train = split_train_test_cal[split_train_test_cal['split'] == 'TRAIN']
         test = split_train_test_cal[split_train_test_cal['split'] == 'TEST']
-        validation = split_train_test_cal[split_train_test_cal['split'] == 'CAL']
+        # validation = split_train_test_cal[split_train_test_cal['split'] == 'CAL']
 
         logger.info("Writing out datasets to %s.", base_dir)
         # TODO: sarah, do we have to store the data as csv files?
         pd.DataFrame(train).to_csv(f"{base_dir}/train/train.csv", header=False, index=False)
-        pd.DataFrame(validation).to_csv(
-            f"{base_dir}/validation/validation.csv", header=False, index=False
-        )
+        # pd.DataFrame(validation).to_csv(f"{base_dir}/validation/validation.csv", header=False, index=False)
         pd.DataFrame(test).to_csv(f"{base_dir}/test/test.csv", header=False, index=False)
     elif args.context == "inference":
         print("Some mock processing for now")
