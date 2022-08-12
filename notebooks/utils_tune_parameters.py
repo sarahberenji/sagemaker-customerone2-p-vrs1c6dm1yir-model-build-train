@@ -89,8 +89,8 @@ def tune_parameters(data, estimator, tuning_params, features, splitting_params, 
                            tuning_params.get('cv_args').get('n_splits'),
                            tuning_params.get('cv_args').get('random_state'), 
                            tuning_params.get('cv_args').get('verbose'))
-#     print(f"\n\n cv={cv}")
-#     print(f"test_size={tuning_params.get('cv_args').get('test_size')}, date_col={tuning_params.get('cv_args').get('date_col')}, n_splits={tuning_params.get('cv_args').get('n_splits')}, random_state={tuning_params.get('cv_args').get('random_state')}, verbose={tuning_params.get('cv_args').get('verbose')}")
+    print(f"\n\n cv={cv}")
+    print(f"test_size={tuning_params.get('cv_args').get('test_size')}, date_col={tuning_params.get('cv_args').get('date_col')}, n_splits={tuning_params.get('cv_args').get('n_splits')}, random_state={tuning_params.get('cv_args').get('random_state')}, verbose={tuning_params.get('cv_args').get('verbose')}")
     
     space = tuning_params.get('tuner_args').get('param_distributions')
 #     print(f"\n\n space={space}")

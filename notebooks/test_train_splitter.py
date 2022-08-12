@@ -76,7 +76,7 @@ class OutOfTimeSplitter:
 #         print(f"\n\n 2-OutOfTimeSplitter.split > date_col={date_col}")
         X.sort_values(date_col, ascending=False, inplace=True)
 
-#         print(f"\n\n 3-OutOfTimeSplitter.split > n_splits = {n_splits}")
+        print(f"\n\n 3-OutOfTimeSplitter.split > n_splits = {n_splits}")
         for split in range(n_splits):
             lower = test_size - size_per_split * split
             upper = test_size - size_per_split * (split + 1)
@@ -98,6 +98,7 @@ class OutOfTimeSplitter:
                     loc = X.loc[idx]
                     print(f"\t{type}: \t{loc[date_col].min()} -> {loc[date_col].max()}\tshape: {loc.shape}\tratio: {len(idx)/len(X):.2f}")
 
+            print(f"\n OutOfTimeSplitter.split > train_idx={train_idx}, test_idx={test_idx}")
             yield train_idx, test_idx
             
 #     def get_n_splits(self, X, y, groups):
