@@ -38,7 +38,7 @@ def preprocessing_pipeline_step(categorical_features, numerical_features):
     # preproc_name = 'numerical'
     # steps = {'imputer': PandasSimpleImputer()}
     pipeline_num = Pipeline(steps=[('imputer', PandasSimpleImputer())])
-    preprocessing.append(('numerical', pipeline_num, categorical_features))
+    preprocessing.append(('numerical', pipeline_num, numerical_features))
 
     print(f"\n\n len preprocessing = {len(preprocessing)}")
 

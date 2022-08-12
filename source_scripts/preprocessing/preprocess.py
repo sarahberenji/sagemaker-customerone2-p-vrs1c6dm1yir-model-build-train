@@ -71,6 +71,8 @@ import pandas as pd
 from utils.determine_feature_type import determine_feature_data_types
 from utils.split import make_splits, make_subsplit
 from utils.reading_data import convert_to_pandas
+from utils.test_train_splitter import OutOfTimeSplitter
+
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 print(f"test: BASE_DIR={BASE_DIR}")
@@ -91,6 +93,10 @@ list_files('/opt/ml/processing')
 install("category-encoders")
 install("imbalanced-learn")
 # print(os.system("pip list"))
+
+
+def to_list_func(item):
+    return [item] if not isinstance(item, list) else item
 
 
 if __name__ == "__main__":
@@ -197,12 +203,85 @@ if __name__ == "__main__":
         train = split_train_test_cal[split_train_test_cal['split'] == 'TRAIN']
         test = split_train_test_cal[split_train_test_cal['split'] == 'TEST']
         # validation = split_train_test_cal[split_train_test_cal['split'] == 'CAL']
+        print(f"type(train) is {type(train)}")
 
         logger.info("Writing out datasets to %s.", base_dir)
         # TODO: sarah, do we have to store the data as csv files?
         pd.DataFrame(train).to_csv(f"{base_dir}/train/train.csv", header=False, index=False)
         # pd.DataFrame(validation).to_csv(f"{base_dir}/validation/validation.csv", header=False, index=False)
         pd.DataFrame(test).to_csv(f"{base_dir}/test/test.csv", header=False, index=False)
+
+        #  ############## Cross validation split data ##################
+        splitting_params = {'splitter': 'test_train_splitter.OutOfTimeSplitter',
+                            'splitter_args': {'n_splits': 1, 'test_size': 0.2, 'date_col': 'current_dt', 'verbose': 1,
+                                              'random_state': 42},
+                            'group_col_name': 'customer_id',
+                            'iteration_col_name': 'iteration_id',
+                            'split_col_name': 'split'}
+        # TODO: Sarah: why do we need splitting_params['splitter_args'] while we are using tuning_params (check in the notebook!)
+        # Here I only took cv_args from tuning_params:
+        cv_args = {'n_splits': 3, 'test_size': 0.45, 'date_col': 'current_dt', 'random_state': 42, 'verbose': 1}
+
+        split_col_name = splitting_params.get("split_col_name", "split")
+        cv = OutOfTimeSplitter(cv_args.get('test_size'),
+                               cv_args.get('date_col'),
+                               cv_args.get('n_splits'),
+                               cv_args.get('random_state'),
+                               cv_args.get('verbose'))
+        splits_to_fit = to_list_func(cv_args.get("splits_to_fit", "TRAIN")) # SARAH: Should we add this 'splits_to_fit' to cv_args???
+        group_col_name = cv_args.get("cv_split_group_col_name", None)
+
+        print("************ start of _find_best_params_per_fold")
+        train_index = split_train_test_cal[split_col_name].isin(splits_to_fit)
+
+        # keep all columns in X_train in case any of them are needed to make the split
+        partition_train = split_train_test_cal.loc[train_index].copy()
+        X_train = partition_train
+        y_train = partition_train[target_col_name]
+
+        if hasattr(cv, "split") and not isinstance(cv, str):
+            print("ifififififififififififififififififififififififififif")
+            group_col = (
+                partition_train[group_col_name]
+                if group_col_name is not None
+                else group_col_name
+            )
+            print(f"group_col={group_col}")
+            cv_args["cv"] = list(cv.split(X=X_train, y=y_train, groups=group_col))
+        print(f"cv_args[cv] len = {len(cv_args['cv'])}, type(cv_args['cv']) = {type(cv_args['cv'])}")
+        print(f"len[0]={len(cv_args['cv'][0])}, len[0][0]={len(cv_args['cv'][0][0])} , len[0][1]={len(cv_args['cv'][0][1])} ")
+        print(f"len[1]={len(cv_args['cv'][1])}, len[1][0]={len(cv_args['cv'][1][0])} , len[1][1]={len(cv_args['cv'][1][1])} ")
+        print(f"len[2]={len(cv_args['cv'][2])}, len[2][0]={len(cv_args['cv'][2][0])} , len[2][1]={len(cv_args['cv'][2][1])} ")
+
+        # use only selected features for tuning
+        X_train = X_train[features]
+        print(f"X_train.shape = {X_train.shape}")
+
+        y_train = y_train.astype(int)
+        print(f"test[0]={y_train[0]}, type(y_train[0])={type(y_train[0])}")
+
+        for fold_idx in range(0, len(cv_args["cv"])):
+            print(f"k fold_idx = {fold_idx}")
+            X_train_fold, X_test_fold = X_train.iloc[cv_args['cv'][fold_idx][0]], X_train.iloc[cv_args['cv'][fold_idx][1]]
+            y_train_fold, y_test_fold = y_train.iloc[cv_args['cv'][fold_idx][0]], y_train.iloc[cv_args['cv'][fold_idx][1]]
+
+            print(f"X_train_fold_{fold_idx}={X_train_fold.shape}, X_test_fold_{fold_idx}={X_test_fold.shape}")
+            print(f"y_train_fold_{fold_idx}={y_train_fold.shape}, X_test_fold_{fold_idx}={y_train_fold.shape}")
+
+            os.makedirs(f'{base_dir}/train/{fold_idx}', exist_ok=True)
+            # np.savetxt(f'{base_dir}/train/{fold_idx}/train_x.csv', X_train_fold, delimiter=',')
+            # np.savetxt(f'{base_dir}/train/{fold_idx}/train_y.csv', y_train_fold, delimiter=',')
+            X_train_fold.to_csv(f'{base_dir}/train/{fold_idx}/train_x.csv')
+            y_train_fold.to_csv(f'{base_dir}/train/{fold_idx}/train_y.csv')
+
+            os.makedirs(f'{base_dir}/test/{fold_idx}', exist_ok=True)
+            # np.savetxt(f'{base_dir}/test/{fold_idx}/test_x.csv', X_test_fold, delimiter=',')
+            # np.savetxt(f'{base_dir}/test/{fold_idx}/test_y.csv', y_test_fold, delimiter=',')
+            X_test_fold.to_csv(f'{base_dir}/test/{fold_idx}/test_x.csv')
+            y_test_fold.to_csv(f'{base_dir}/test/{fold_idx}/test_y.csv')
+
+            print(f"Saving the data for fold={fold_idx} is done!!")
+
     elif args.context == "inference":
         print("Some mock processing for now")
 

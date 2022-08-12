@@ -194,7 +194,7 @@ def preprocessing(base_job_prefix, env_data, network_config, processing_instance
         framework_version="0.23-1",
         instance_type=processing_instance_type,
         instance_count=processing_instance_count,
-        base_job_name=f"{base_job_prefix}/sklearn-c1-xsell--preprocess",
+        base_job_name=f"{base_job_prefix}/sklearn-c1-xsell--preprocess_kfold",
         sagemaker_session=sagemaker_session,
         role=env_data["ProcessingRole"],
         network_config=network_config,
