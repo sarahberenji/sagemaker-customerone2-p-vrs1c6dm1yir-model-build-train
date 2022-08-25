@@ -242,6 +242,8 @@ def lightgbm_training_tasks(base_job_prefix, env_data, image_uri, network_config
 
     cross_validation_with_hpo_script = "{}/preprocessing/cross_validation_with_hpo.py".format(source_scripts_path)
     scikit_learn_iris_script = "{}/preprocessing/scikit_learn_iris.py".format(source_scripts_path)
+    print(f"SARAH: lightgbm_training_tasks > cross_validation_with_hpo_script = {cross_validation_with_hpo_script}")
+    print(f"SARAH: lightgbm_training_tasks > scikit_learn_iris_script = {scikit_learn_iris_script}")
 
     s3_bucket_base_path_jobinfo = f"{data_base_path}/jobinfo" # TODO: SARAH: is this correct????
     # s3_bucket_base_path = f"s3://{default_bucket_data.default_value}/{bucket_prefix_data.default_value}"
@@ -342,13 +344,13 @@ def lightgbm_training_tasks(base_job_prefix, env_data, image_uri, network_config
     #
     # * SKLearn Estimator - A Sagemaker Estimator used in training a final model.
     # * TrainingStep - Workflow step that triggers the model selection process.
-    sklearn_estimator = SKLearn(scikit_learn_iris_script,
+    sklearn_estimator = SKLearn("scikit_learn_iris.py",
                                 framework_version=framework_version,
                                 instance_type=training_instance_type,
                                 py_version='py3',
                                 source_dir="code",
                                 output_path=s3_bucket_base_path_output,
-                                role=env_data["TrainingRole"]) # what should be the role here?
+                                role=env_data["TrainingRole"])  # what should be the role here?
     print("SARAH: lightgbm_training_tasks > sklearn_estimator is created")
 
     step_model_selection = TrainingStep(
