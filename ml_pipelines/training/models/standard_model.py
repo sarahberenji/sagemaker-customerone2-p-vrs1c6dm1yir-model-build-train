@@ -385,11 +385,13 @@ def evaluation_tasks(base_job_prefix, env_data, image_uri, network_config, proce
         volume_kms_key=env_data["EbsKmsKeyArn"],
         output_kms_key=env_data["S3KmsKeyId"]
     )
+    print("SARAH: evaluation_tasks > script_eval done")
     evaluation_report = PropertyFile(
         name="AbaloneEvaluationReport",
         output_name="evaluation",
         path="evaluation.json",
     )
+    print("SARAH: evaluation_tasks > evaluation_report done")
     step_eval = ProcessingStep(
         name="EvaluateAbaloneModel",
         processor=script_eval,
@@ -413,7 +415,7 @@ def evaluation_tasks(base_job_prefix, env_data, image_uri, network_config, proce
         code="{}/evaluate/evaluate.py".format(source_scripts_path),
         property_files=[evaluation_report],
     )
-
+    print("SARAH: evaluation_tasks > step_eval done")
     # register model step that will be conditionally executed
     model_metrics = ModelMetrics(
         model_statistics=MetricsSource(
@@ -421,6 +423,7 @@ def evaluation_tasks(base_job_prefix, env_data, image_uri, network_config, proce
             content_type="application/json"
         )
     )
+    print("SARAH: evaluation_tasks > model_metrics done")
     return evaluation_report, model_metrics, step_eval
 
 
