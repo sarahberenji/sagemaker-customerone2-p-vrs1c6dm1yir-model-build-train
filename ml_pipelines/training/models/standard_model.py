@@ -49,7 +49,14 @@ def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_pac
 
     # SARAH: base_job_prefix = customerone-dev-branch-p-lwkq81p5gxnk
     # SARAH: default_bucket=***
-    # SARAH: env_data={'DomainArn': 'arn:aws:sagemaker:eu-north-1:***:domain/d-tdizim9qnor9', 'DomainId': 'd-tdizim9qnor9', 'DomainName': 'mlops-dev-eu-north-1-sagemaker-domain', 'HomeEfsFileSystemId': 'fs-03fc3d37f8623fea2', 'Status': 'InService', 'AuthMode': 'IAM', 'AppNetworkAccessType': 'VpcOnly', 'SubnetIds': ['subnet-0724be5e7071e7070', 'subnet-01def51ffe7467c71'], 'Url': 'https://d-tdizim9qnor9.studio.eu-north-1.sagemaker.aws', 'VpcId': 'vpc-0459a28f3637e285c', 'KmsKeyId': 'f4664542-0f2e-42ca-b51f-2bec0ad62278', 'ExecutionRole': 'arn:aws:iam::***:role/sm-mlops-env-EnvironmentIAM-SageMakerExecutionRole-14AU65MVMBUGO', 'SecurityGroups': ['***'], 'EnvironmentName': 'mlops', 'EnvironmentType': 'dev', 'DataBucketName': '***', 'ModelBucketName': '***', 'S3KmsKeyId': '***', 'EbsKmsKeyArn': '***', 'TrustedDefaultKinesisAccount': '', 'ProcessingRole': 'arn:aws:iam::***:role/sm-mlops-env-EnvironmentIAM-SageMakerExecutionRole-14AU65MVMBUGO', 'TrainingRole': 'arn:aws:iam::***:role/sm-mlops-env-EnvironmentIAM-SageMakerExecutionRole-14AU65MVMBUGO'}
+    # SARAH: env_data={'DomainArn': 'arn:aws:sagemaker:eu-north-1:***:domain/d-tdizim9qnor9', 'DomainId': 'd-tdizim9qnor9',
+    #   'DomainName': 'mlops-dev-eu-north-1-sagemaker-domain', 'HomeEfsFileSystemId': 'fs-03fc3d37f8623fea2', 'Status': 'InService',
+    #   'AuthMode': 'IAM', 'AppNetworkAccessType': 'VpcOnly', 'SubnetIds': ['subnet-0724be5e7071e7070', 'subnet-01def51ffe7467c71'],
+    #   'Url': 'https://d-tdizim9qnor9.studio.eu-north-1.sagemaker.aws', 'VpcId': 'vpc-0459a28f3637e285c', 'KmsKeyId': 'f4664542-0f2e-42ca-b51f-2bec0ad62278',
+    #   'ExecutionRole': 'arn:aws:iam::***:role/sm-mlops-env-EnvironmentIAM-SageMakerExecutionRole-14AU65MVMBUGO', 'SecurityGroups': ['***'],
+    #   'EnvironmentName': 'mlops', 'EnvironmentType': 'dev', 'DataBucketName': '***', 'ModelBucketName': '***', 'S3KmsKeyId': '***',
+    #   'EbsKmsKeyArn': '***', 'TrustedDefaultKinesisAccount': '', 'ProcessingRole': 'arn:aws:iam::***:role/sm-mlops-env-EnvironmentIAM-SageMakerExecutionRole-14AU65MVMBUGO',
+    #   'TrainingRole': 'arn:aws:iam::***:role/sm-mlops-env-EnvironmentIAM-SageMakerExecutionRole-14AU65MVMBUGO'}
     # SARAH: model_package_group_name=customerone-dev-branch-p-lwkq81p5gxnk
     # SARAH: pipeline_name]customerone-dev-branch-p-lwkq81p5gxnk-training
     # SARAH: base_dir=/codebuild/output/src374925051/src
@@ -255,6 +262,7 @@ def lightgbm_training_tasks(base_job_prefix, env_data, image_uri, network_config
     print(F"SARAH: lightgbm_training_tasks > s3_bucket_base_path_output={s3_bucket_base_path_output}")
     print(f"SARAH: lightgbm_training_tasks > s3_bucket_base_path_jobinfo = {s3_bucket_base_path_jobinfo}")
     print(f"SARAH: lightgbm_training_tasks > from xgbm train ={TrainingInput(s3_data=step_process.properties.ProcessingOutputConfig.Outputs['train'].S3Output.S3Uri, content_type='text/csv')}")
+    print(f"SARAH: lightgbm_training_task > env_data[TrainingRole] ={env_data['TrainingRole'],}")
     # SARAH: lightgbm_training_tasks > s3_bucket_base_path = s3://***/lifecycle/60d/customerone-dev-branch/dc8e2f8/2022_08_24_12_32_10/p1033/output/training/lifecycle/30d/customerone-dev-branch/
     # SARAH: lightgbm_training_tasks > bucket_prefix_data=lifecycle/30d/customerone-dev-branch/
     # SARAH: lightgbm_training_tasks > s3_bucket_base_path_train=s3://***/lifecycle/60d/customerone-dev-branch/dc8e2f8/2022_08_24_12_32_10/p1033/output/training/lifecycle/30d/customerone-dev-branch/train
@@ -291,6 +299,7 @@ def lightgbm_training_tasks(base_job_prefix, env_data, image_uri, network_config
         output_kms_key=env_data["S3KmsKeyId"],
         network_config=network_config,
     )
+    print("SARAH: lightgbm_training_tasks > script_tuner is created")
 
     step_cv_train_hpo = ProcessingStep(
         name="HyperParameterTuningStep",
@@ -322,6 +331,8 @@ def lightgbm_training_tasks(base_job_prefix, env_data, image_uri, network_config
         property_files=[evaluation_report],
         depends_on=['PreprocessStep'])
 
+    print("SARAH: lightgbm_training_tasks > step_cv_train_hpo is created")
+
     # ## 3- Model Selection Step
     # Model selection is the final step in cross validation model training workflow. Based on the metrics and hyperparameters acquired from the cross validation steps orchestrated through ScriptProcessor,
     # a Training Step is defined to train a model with the same algorithm used in cross validation training, with all available training data. The model artifacts created from the training process will be used
@@ -337,7 +348,8 @@ def lightgbm_training_tasks(base_job_prefix, env_data, image_uri, network_config
                                 py_version='py3',
                                 source_dir="code",
                                 output_path=s3_bucket_base_path_output,
-                                role=env_data['role'])
+                                role=env_data["TrainingRole"]) # what should be the role here?
+    print("SARAH: lightgbm_training_tasks > sklearn_estimator is created")
 
     step_model_selection = TrainingStep(
         name="ModelSelectionStep",
@@ -353,7 +365,7 @@ def lightgbm_training_tasks(base_job_prefix, env_data, image_uri, network_config
             )
         }
     )
-
+    print("SARAH: lightgbm_training_tasks > step_model_selection is created")
     return step_model_selection, step_cv_train_hpo, sklearn_estimator
 
 
