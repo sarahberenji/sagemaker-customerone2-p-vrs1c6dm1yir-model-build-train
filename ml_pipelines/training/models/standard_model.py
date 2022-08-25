@@ -35,7 +35,7 @@ def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_pac
     trigger_id = ParameterString(name="TriggerID", default_value="0000000000") #from codebuild - use CODEBUILD_BUILD_ID env variable parsed after ":" The CodeBuild ID of the build (for example, codebuild-demo-project:b1e6661e-e4f2-4156-9ab9-82a19EXAMPLE).
     nowgmt = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
     execution_time = ParameterString(name="ExecutionTime", default_value=nowgmt)
-    image_uri = "370702650160.dkr.ecr.eu-north-1.amazonaws.com/sagemaker-cross-validation-pipeline"
+    image_uri = "370702650160.dkr.ecr.eu-north-1.amazonaws.com/sagemaker-cross-validation-pipeline:latest"
     framework_version = "0.23-1"
 
     print(f"SARAH: base_job_prefix = {base_job_prefix}")
@@ -225,7 +225,7 @@ def preprocessing(base_job_prefix, env_data, network_config, processing_instance
         ],
     )
     print("SARAH: standard_model_pipeline > preprocessing ends!")
-    return step_process, preprocessing_script # TODO: SARAH: why should we return preprocessing_script??!??!
+    return step_process, preprocessing_script  # TODO: SARAH: why should we return preprocessing_script??!??!
 
 
 def lightgbm_training_tasks(base_job_prefix, env_data, image_uri, network_config, sagemaker_session, step_process,
@@ -348,7 +348,7 @@ def lightgbm_training_tasks(base_job_prefix, env_data, image_uri, network_config
                                 framework_version=framework_version,
                                 instance_type=training_instance_type,
                                 py_version='py3',
-                                source_dir="code",
+                                source_dir="/opt/ml/code/",
                                 output_path=s3_bucket_base_path_output,
                                 role=env_data["TrainingRole"])  # what should be the role here?
     print("SARAH: lightgbm_training_tasks > sklearn_estimator is created")
