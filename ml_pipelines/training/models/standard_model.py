@@ -284,11 +284,12 @@ def lightgbm_training_tasks(base_job_prefix, env_data, image_uri, network_config
         role=env_data["TrainingRole"],
         sagemaker_session=sagemaker_session,
         # subnets=network_config.subnets,
-        security_group_ids=network_config.security_group_ids,
-        encrypt_inter_container_traffic=True,
-        enable_network_isolation=False,
+        # security_group_ids=network_config.security_group_ids,
+        # encrypt_inter_container_traffic=True,
+        # enable_network_isolation=False,
         volume_kms_key=env_data["EbsKmsKeyArn"],
-        output_kms_key=env_data["S3KmsKeyId"]
+        output_kms_key=env_data["S3KmsKeyId"],
+        network_config=network_config,
     )
 
     step_cv_train_hpo = ProcessingStep(
