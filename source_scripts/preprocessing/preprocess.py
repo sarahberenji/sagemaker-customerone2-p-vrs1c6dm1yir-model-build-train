@@ -116,7 +116,7 @@ if __name__ == "__main__":
 
     boto3.setup_default_session(region_name="eu-north-1")
     ssm = boto3.client('ssm', region_name="eu-north-1")
-    env_type=ssm.get_parameter(Name='EnvType')['Parameter']['Value']
+    env_type = ssm.get_parameter(Name='EnvType')['Parameter']['Value']
 
     if args.filter == "disabled":
         query_filter = ""

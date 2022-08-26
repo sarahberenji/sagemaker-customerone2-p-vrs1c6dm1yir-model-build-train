@@ -64,6 +64,8 @@ def train(train=None,
     role = sagemaker.get_execution_role()
     sm_client = boto3.client("sagemaker")
 
+    print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() role={role}")
+
     # An Estimator object to be associated with the HyperparameterTuner job. 
     cv_estimator = Estimator(
         image_uri=image_uri,

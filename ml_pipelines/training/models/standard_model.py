@@ -154,7 +154,18 @@ def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_pac
             execution_time,
             database,
             table,
-            filter
+            filter,
+            hpo_tuner_instance_type,
+            # role,
+            image_uri,
+            #             k,
+            #             max_jobs,
+            #             max_parallel_jobs,
+            #             min_c,
+            #             max_c,
+            #             min_gamma,
+            #             max_gamma,
+            #             gamma_scaling_type
         ],
         steps=[step_process, step_model_selection, step_eval, step_cond],
         # steps=[step_process],
@@ -231,19 +242,27 @@ def preprocessing(base_job_prefix, env_data, network_config, processing_instance
 def lightgbm_training_tasks(base_job_prefix, env_data, image_uri, network_config, sagemaker_session, step_process,
                             training_instance_type, training_instance_count, model_path, data_base_path,
                             evaluation_path, hpo_tuner_instance_type, region, framework_version, source_scripts_path):
-    k = ParameterInteger(name="KFold", default_value=3)
-    max_jobs = ParameterInteger(name="MaxTrainingJobs", default_value=3)
-    max_parallel_jobs = ParameterInteger(name="MaxParallelTrainingJobs", default_value=1)
-    min_c = ParameterInteger(name="MinimumC", default_value=0)
-    max_c = ParameterInteger(name="MaximumC", default_value=1)
-    min_gamma = ParameterFloat(name="MinimumGamma", default_value=0.0001)
-    max_gamma = ParameterFloat(name="MaximumGamma", default_value=0.001)
-    gamma_scaling_type = ParameterString(name="GammaScalingType", default_value="Logarithmic")
+    # k = ParameterInteger(name="KFold", default_value=3)
+    # max_jobs = ParameterInteger(name="MaxTrainingJobs", default_value=3)
+    # max_parallel_jobs = ParameterInteger(name="MaxParallelTrainingJobs", default_value=1)
+    # min_c = ParameterInteger(name="MinimumC", default_value=0)
+    # max_c = ParameterInteger(name="MaximumC", default_value=1)
+    # min_gamma = ParameterFloat(name="MinimumGamma", default_value=0.0001)
+    # max_gamma = ParameterFloat(name="MaximumGamma", default_value=0.001)
+    # gamma_scaling_type = ParameterString(name="GammaScalingType", default_value="Logarithmic")
+    k = "3"
+    max_jobs = "3"
+    max_parallel_jobs = "1"
+    min_c = "0"
+    max_c = "1"
+    min_gamma = "0.0001"
+    max_gamma = "0.001"
+    gamma_scaling_type = "Logarithmic"
 
     cross_validation_with_hpo_script = "{}/preprocessing/cross_validation_with_hpo.py".format(source_scripts_path)
-    scikit_learn_iris_script = "{}/preprocessing/scikit_learn_iris.py".format(source_scripts_path)
+    # scikit_learn_iris_script = "{}/preprocessing/scikit_learn_iris.py".format(source_scripts_path)
     print(f"SARAH: lightgbm_training_tasks > cross_validation_with_hpo_script = {cross_validation_with_hpo_script}")
-    print(f"SARAH: lightgbm_training_tasks > scikit_learn_iris_script = {scikit_learn_iris_script}")
+    # print(f"SARAH: lightgbm_training_tasks > scikit_learn_iris_script = {scikit_learn_iris_script}")
 
     s3_bucket_base_path_jobinfo = f"{data_base_path}/jobinfo" # TODO: SARAH: is this correct????
     # s3_bucket_base_path = f"s3://{default_bucket_data.default_value}/{bucket_prefix_data.default_value}"
@@ -315,20 +334,20 @@ def lightgbm_training_tasks(base_job_prefix, env_data, image_uri, network_config
                              source="/opt/ml/processing/jobinfo",
                              destination=s3_bucket_base_path_jobinfo)
         ],
-        job_arguments=["-k", str(k.expr),
+        job_arguments=["-k", k,
                        "--image-uri", image_uri,
                        "--train", s3_bucket_base_path_train,
                        "--test", s3_bucket_base_path_test,
                        "--instance-type", training_instance_type,
-                       "--instance-count", str(training_instance_count.expr),
+                       "--instance-count", "1",
                        "--output-path", s3_bucket_base_path_output,
-                       "--max-jobs", str(max_jobs.expr),
-                       "--max-parallel-jobs", str(max_parallel_jobs.expr),
-                       "--min-c", str(min_c.expr),
-                       "--max-c", str(max_c.expr),
-                       "--min-gamma", str(min_gamma.expr),
-                       "--max-gamma", str(max_gamma.expr),
-                       "--gamma-scaling-type", str(gamma_scaling_type.expr),
+                       "--max-jobs", "3",
+                       "--max-parallel-jobs", max_parallel_jobs,
+                       "--min-c", min_c,
+                       "--max-c", max_c,
+                       "--min-gamma", min_gamma,
+                       "--max-gamma", max_gamma,
+                       "--gamma-scaling-type", gamma_scaling_type,
                        "--region", str(region)],
         property_files=[evaluation_report],
         depends_on=['PreprocessStep'])
