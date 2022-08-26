@@ -16,15 +16,15 @@ def train(train=None,
           instance_type="ml.c4.xlarge", 
           instance_count=1, 
           output_path=None,
-          k = 5,
+          k=5,
           max_jobs=2,
           max_parallel_jobs=2,
-          min_c = 0,
-          max_c = 1,
+          min_c=0,
+          max_c=1,
           min_gamma=0.0001,
           max_gamma=0.001,
           gamma_scaling_type="Logarithmic",
-          region = "us-east-2"):
+          region="eu-north-1"):
     
     """Triggers a sagemaker automatic hyperparameter tuning optimization job to train and evaluate a given algorithm. 
      Hyperparameter tuner job triggers maximum number of training jobs with the given maximum parallel jobs per batch. Each training job triggered by the tuner would trigger k cross validation model training jobs.
@@ -58,22 +58,23 @@ def train(train=None,
         role=role,
         sagemaker_session=sagemaker_session,
         output_path=output_path)
+    print("SARAH: cross_validation_with_hpo.py in preprocessing folder > train() > cv_estimator is done")
 
     cv_estimator.set_hyperparameters(
-        train_src = train,
-        test_src = test,
-        k = k,
-        instance_type = instance_type,
-        region = region)
+        train_src=train,
+        test_src=test,
+        k=k,
+        instance_type=instance_type,
+        region=region)
 
     hyperparameter_ranges = {
                             'c': ContinuousParameter(min_c, max_c), 
-                            'kernel' : CategoricalParameter(['linear', 'poly', 'rbf', 'sigmoid']),
-                            'gamma' : ContinuousParameter(min_value=min_gamma, 
+                            'kernel': CategoricalParameter(['linear', 'poly', 'rbf', 'sigmoid']),
+                            'gamma': ContinuousParameter(min_value=min_gamma,
                                                           max_value=max_gamma, 
                                                           scaling_type=gamma_scaling_type)
                           }
-
+    print("SARAH: cross_validation_with_hpo.py in preprocessing folder > train() > hyperparameter_ranges is done")
     objective_metric_name = "test:score"
     tuner = HyperparameterTuner(cv_estimator,
                               objective_metric_name,
@@ -84,26 +85,28 @@ def train(train=None,
                               metric_definitions=[{"Name": objective_metric_name, 
                                                    "Regex": "model test score:(.*?);"}])
 
+    print("SARAH: cross_validation_with_hpo.py in preprocessing folder > train() > tuner is done")
     tuner.fit({"train": train, "test": test}, include_cls_metadata=True)
+    print("SARAH: cross_validation_with_hpo.py in preprocessing folder > train() > tuner.fit() is done")
 
     best_traning_job_name = tuner.best_training_job()
     tuner_job_name = tuner.latest_tuning_job.name  
     best_performing_job = sm_client.describe_training_job(TrainingJobName=best_traning_job_name)
 
     hyper_params = best_performing_job['HyperParameters']
-    best_hyperparams = { k:v for k,v in hyper_params.items() if not k.startswith("sagemaker_")}
+    best_hyperparams = {k:v for k,v in hyper_params.items() if not k.startswith("sagemaker_")}
 
     jobinfo = {}
     jobinfo['name'] = tuner_job_name
     jobinfo['best_training_job'] = best_traning_job_name
     jobinfo['hyperparams'] = best_hyperparams
-    metric_value = [ x['Value'] for x in best_performing_job['FinalMetricDataList'] 
-                    if x['MetricName'] == objective_metric_name ][0]
+    metric_value = [x['Value'] for x in best_performing_job['FinalMetricDataList']
+                    if x['MetricName'] == objective_metric_name][0]
     
     evaluation_metrics = { "multiclass_classification_metrics" : {
-                            "accuracy" : {
-                              "value" : metric_value,
-                              "standard_deviation" : "NaN"
+                            "accuracy": {
+                              "value": metric_value,
+                              "standard_deviation": "NaN"
                             },
                          }
                        }
@@ -113,7 +116,8 @@ def train(train=None,
 
     with open(f'{base_dir_jobinfo}/jobinfo.json', 'w') as f:
         f.write(json.dumps(jobinfo))
-  
+
+
 if __name__ =='__main__':
     parser = argparse.ArgumentParser()
     print("SARAH: cross_validation_with_hpo.py in preprocessing folder > __main__ ")
@@ -152,4 +156,4 @@ if __name__ =='__main__':
           min_gamma=args.min_gamma,
           max_gamma=args.max_gamma,
           gamma_scaling_type=args.gamma_scaling_type,
-          region = args.region)
+          region=args.region)
