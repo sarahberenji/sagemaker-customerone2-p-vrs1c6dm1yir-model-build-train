@@ -143,30 +143,10 @@ def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_pac
 
     # processing step for evaluation
     # evaluation_path = "s3://{}/lifecycle/max/{}/{}/{}/{}/output/evaluation".format(env_data["ModelBucketName"], project, revision, model_name, time_path)
-    evaluation_report, model_metrics, step_eval = evaluation_tasks(base_job_prefix=base_job_prefix,
-                                                                   env_data=env_data,
-                                                                   image_uri=image_uri,
-                                                                   network_config=network_config,
-                                                                   sagemaker_session=sagemaker_session,
-                                                                   step_process=step_process,
-                                                                   processing_instance_type=processing_instance_type,
-                                                                   step_train=step_model_selection,
-                                                                   source_scripts_path=source_scripts_path,
-                                                                   evaluation_path=evaluation_path
-                                                                   )
+
 
     postprocessing_script = "{}/postprocessing/postprocess.py".format(source_scripts_path)
-    step_cond = model_register_tasks(evaluation_report,
-                                     model_approval_status,
-                                     model_metrics,
-                                     model_package_group_name,
-                                     network_config,
-                                     step_eval,
-                                     step_model_selection,
-                                     sklearn_estimator,
-                                     preprocessing_script,
-                                     postprocessing_script,
-                                     revision)
+
     # pipeline instance
     pipeline = Pipeline(
         name=pipeline_name,
@@ -193,7 +173,7 @@ def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_pac
             #             gamma_scaling_type
         ],
         # steps=[step_process, step_model_selection, step_eval, step_cond],
-        steps=[step_process, step_cv_train_hpo, step_eval, step_cond],
+        steps=[step_process, step_cv_train_hpo,],
         # steps=[step_process],
         sagemaker_session=sagemaker_session,
     )
