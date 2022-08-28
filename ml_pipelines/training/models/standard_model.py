@@ -376,7 +376,8 @@ def lightgbm_training_tasks(base_job_prefix, env_data, image_uri, network_config
                        "--gamma-scaling-type", gamma_scaling_type,
                        "--region", str(region)],
         property_files=[evaluation_report],
-        depends_on=['PreprocessStep'])
+        # depends_on=['PreprocessStep'])
+        depends_on=['PreprocessC1XsellData'])
 
     print("SARAH: lightgbm_training_tasks > step_cv_train_hpo is created")
 
