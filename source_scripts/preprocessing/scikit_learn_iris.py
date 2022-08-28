@@ -7,10 +7,38 @@ from joblib import load, dump
 import logging
 import json
 
+def list_files(startpath):
+    for root, dirs, files in os.walk(startpath):
+        print(f"list_files > root={root}, dirs={dirs}, files={files}")
+        level = root.replace(startpath, '').count(os.sep)
+        indent = ' ' * 4 * (level)
+        print('{}{}/'.format(indent, os.path.basename(root)))
+        subindent = ' ' * 4 * (level + 1)
+        for f in files:
+            print('{}{}'.format(subindent, f))
+
 logging.basicConfig(level=logging.INFO)
 
 base_dir = "/opt/ml/processing"
-base_dir_evaluation = f"{base_dir}/evaluation" 
+base_dir_evaluation = f"{base_dir}/evaluation"
+
+# BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+# print(f"test: BASE_DIR={BASE_DIR}")
+print(f"SARAH: scikit_learn_iris.py in preprocessing folder > base_dir={base_dir}")
+try:
+    print("SARAH: scikit_learn_iris.py in preprocessing folder > ##### OS CODEBUILD ENV")
+    print(os.environ["CODEBUILD_SRC_DIR"])
+    # list_files(os.environ["CODEBUILD_SRC_DIR"])
+except:
+    print("SARAH: scikit_learn_iris.py in preprocessing folder > no codebuild env")
+print(f"SARAH: scikit_learn_iris.py in preprocessing folder >#### Current Working Dir is '{os.getcwd()}'")
+# list_files(os.getcwd())
+print("SARAH: scikit_learn_iris.py in preprocessing folder >list files under /opt/ml/processin, is it the same as BASE_DIR??")
+print("SARAH: scikit_learn_iris.py in preprocessing folder >#### BASE_DIR list_files")
+# list_files(BASE_DIR)
+list_files(base_dir)
+print("SARAH: scikit_learn_iris.py in preprocessing folder > #### list_files under /opt/ml/processing")
+list_files('/opt/ml/processing')
 
 def train(train=None, test=None):
     """Trains a model using the specified algorithm with given parameters.

@@ -116,7 +116,7 @@ if __name__ == "__main__":
 
     boto3.setup_default_session(region_name="eu-north-1")
     ssm = boto3.client('ssm', region_name="eu-north-1")
-    env_type=ssm.get_parameter(Name='EnvType')['Parameter']['Value']
+    env_type = ssm.get_parameter(Name='EnvType')['Parameter']['Value']
 
     if args.filter == "disabled":
         query_filter = ""
@@ -258,7 +258,8 @@ if __name__ == "__main__":
         print(f"X_train.shape = {X_train.shape}")
 
         y_train = y_train.astype(int)
-        print(f"test[0]={y_train[0]}, type(y_train[0])={type(y_train[0])}")
+        # print(f"test[0]={y_train[0]}, type(y_train[0])={type(y_train[0])}")
+        print(f"y_train.shape = {y_train.shape}")
 
         for fold_idx in range(0, len(cv_args["cv"])):
             print(f"k fold_idx = {fold_idx}")
