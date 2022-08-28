@@ -20,6 +20,15 @@ from sagemaker.dataset_definition.inputs import (
 from datetime import datetime
 import time
 
+def list_files(startpath):
+    for root, dirs, files in os.walk(startpath):
+        print(f"list_files > root={root}, dirs={dirs}, files={files}")
+        level = root.replace(startpath, '').count(os.sep)
+        indent = ' ' * 4 * (level)
+        print('{}{}/'.format(indent, os.path.basename(root)))
+        subindent = ' ' * 4 * (level + 1)
+        for f in files:
+            print('{}{}'.format(subindent, f))
 
 def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_package_group_name, pipeline_name,
                             region, sagemaker_session, base_dir, source_scripts_path, project="standard_model",
@@ -115,6 +124,22 @@ def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_pac
                                                     framework_version=framework_version,
                                                     source_scripts_path=source_scripts_path,
                                                     )
+
+    BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+    print(f"standard_model_pipeline(): BASE_DIR={BASE_DIR}")
+    try:
+        print("standard_model_pipeline():##### OS CODEBUILD ENV")
+        print(os.environ["CODEBUILD_SRC_DIR"])
+        # list_files(os.environ["CODEBUILD_SRC_DIR"])
+    except:
+        print("standard_model_pipeline(): no codebuild env")
+    print(f"standard_model_pipeline():#### Current Working Dir is '{os.getcwd()}'")
+    # list_files(os.getcwd())
+    print("standard_model_pipeline(): list files under /opt/ml/processin, is it the same as BASE_DIR??")
+    print("standard_model_pipeline(): #### BASE_DIR list_files")
+    list_files(BASE_DIR)
+    print("standard_model_pipeline(): #### list_files under /opt/ml/processing")
+    list_files('/opt/ml/processing')
 
     # processing step for evaluation
     # evaluation_path = "s3://{}/lifecycle/max/{}/{}/{}/{}/output/evaluation".format(env_data["ModelBucketName"], project, revision, model_name, time_path)
