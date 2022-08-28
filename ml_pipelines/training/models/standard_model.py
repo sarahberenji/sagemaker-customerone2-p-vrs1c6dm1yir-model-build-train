@@ -192,7 +192,8 @@ def standard_model_pipeline(base_job_prefix, default_bucket, env_data, model_pac
             #             max_gamma,
             #             gamma_scaling_type
         ],
-        steps=[step_process, step_model_selection, step_eval, step_cond],
+        # steps=[step_process, step_model_selection, step_eval, step_cond],
+        steps=[step_process, step_cv_train_hpo, step_eval, step_cond],
         # steps=[step_process],
         sagemaker_session=sagemaker_session,
     )
