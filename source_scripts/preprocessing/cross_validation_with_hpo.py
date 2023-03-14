@@ -7,28 +7,30 @@ import boto3
 from sagemaker.tuner import ParameterRange, CategoricalParameter, ContinuousParameter, HyperparameterTuner
 
 base_dir = "/opt/ml/processing"
-base_dir_evaluation = f"{base_dir}/evaluation" 
-base_dir_jobinfo = f"{base_dir}/jobinfo" 
+base_dir_evaluation = f"{base_dir}/evaluation"
+base_dir_jobinfo = f"{base_dir}/jobinfo"
 
-def train(train=None, 
-          test=None, 
-          image_uri=None, 
-          instance_type="ml.c4.xlarge", 
-          instance_count=1, 
+
+def train(train=None,
+          test=None,
+          image_uri=None,
+          instance_type="ml.c4.xlarge",
+          instance_count=1,
           output_path=None,
           k=5,
           max_jobs=2,
           max_parallel_jobs=2,
-          min_c=0,
-          max_c=1,
-          min_gamma=0.0001,
-          max_gamma=0.001,
-          gamma_scaling_type="Logarithmic",
-          region="eu-north-1"):
-    
-    """Triggers a sagemaker automatic hyperparameter tuning optimization job to train and evaluate a given algorithm. 
+          region="eu-north-1",
+          subnets="subnet-0724be5e7071e7070",
+          security_group_ids="sg-041054ee4500f96f6",
+          preprocessing_categorical_encoder_min_samples_leaf="100",
+          preprocessing_categorical_encoder_smoothing = "1.0",
+          over_sampler_sampling_strategy = "0.5",
+          estimator_learning_rate=0.2,
+          ):
+    """Triggers a sagemaker automatic hyperparameter tuning optimization job to train and evaluate a given algorithm.
      Hyperparameter tuner job triggers maximum number of training jobs with the given maximum parallel jobs per batch. Each training job triggered by the tuner would trigger k cross validation model training jobs.
-     
+
      Args:
          train: S3 URI where the training dataset is located
          test: S3 URI where the test dataset is located
@@ -55,25 +57,30 @@ def train(train=None,
     print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() k={k}")
     print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() max_jobs={max_jobs}")
     print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() max_parallel_jobs={max_parallel_jobs}")
-    print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() min_c={min_c}")
-    print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() min_gamma={min_gamma}")
-    print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() max_gamma={max_gamma}")
-    print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() gamma_scaling_type={gamma_scaling_type}")
     print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() region={region}")
+    print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() subnets={subnets}")
+    print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() security_group_ids={security_group_ids}")
+    print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() preprocessing__categorical__encoder__min_samples_leaf={preprocessing_categorical_encoder_min_samples_leaf}")
+    print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() preprocessing__categorical__encoder__smoothing={preprocessing_categorical_encoder_smoothing}")
+    print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() over_sampler__sampling_strategy={over_sampler_sampling_strategy}")
+    print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() estimator__learning_rate={estimator_learning_rate}")
     sagemaker_session = sagemaker.session.Session()
     role = sagemaker.get_execution_role()
     sm_client = boto3.client("sagemaker")
 
     print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() role={role}")
 
-    # An Estimator object to be associated with the HyperparameterTuner job. 
+    # An Estimator object to be associated with the HyperparameterTuner job.
     cv_estimator = Estimator(
         image_uri=image_uri,
         instance_type=instance_type,
         instance_count=instance_count,
         role=role,
         sagemaker_session=sagemaker_session,
-        output_path=output_path)
+        output_path=output_path,
+        subnets=[subnets],
+        security_group_ids=[security_group_ids],
+    )
     print("SARAH: cross_validation_with_hpo.py in preprocessing folder > train() > cv_estimator is done")
 
     cv_estimator.set_hyperparameters(
@@ -81,52 +88,67 @@ def train(train=None,
         test_src=test,
         k=k,
         instance_type=instance_type,
-        region=region)
+        region=region,
+        subnets=subnets,
+        security_group_ids=security_group_ids,
+    )
 
     hyperparameter_ranges = {
-                            'c': ContinuousParameter(min_c, max_c), 
-                            'kernel': CategoricalParameter(['linear', 'poly', 'rbf', 'sigmoid']),
-                            'gamma': ContinuousParameter(min_value=min_gamma,
-                                                          max_value=max_gamma, 
-                                                          scaling_type=gamma_scaling_type)
-                          }
+        'preprocessing_categorical_encoder_min_samples_leaf': CategoricalParameter([100, 10000]),
+        'preprocessing_categorical_encoder_smoothing': CategoricalParameter([5.0, 25.0]),
+        'over_sampler_sampling_strategy': CategoricalParameter([0.5, 0.35, ]),
+        # 'estimator_max_depth': CategoricalParameter([5, 10]),
+        # 'estimator_num_leaves': IntegerParameter(20, 20),
+        # 'estimator_n_estimators': IntegerParameter(50, 50),
+        # 'estimator_min_child_samples': IntegerParameter(100, 100),
+        'estimator_learning_rate': CategoricalParameter([0.01, 0.1]),
+    }
+
     print("SARAH: cross_validation_with_hpo.py in preprocessing folder > train() > hyperparameter_ranges is done")
     objective_metric_name = "test:score"
     tuner = HyperparameterTuner(cv_estimator,
-                              objective_metric_name,
-                              hyperparameter_ranges,
-                              objective_type="Maximize",
-                              max_jobs=max_jobs,
-                              max_parallel_jobs=max_parallel_jobs,
-                              metric_definitions=[{"Name": objective_metric_name, 
-                                                   "Regex": "model test score:(.*?);"}])
+                                objective_metric_name,
+                                hyperparameter_ranges,
+                                objective_type="Maximize",
+                                max_jobs=max_jobs,
+                                max_parallel_jobs=max_parallel_jobs,
+                                metric_definitions=[{"Name": objective_metric_name,
+                                                     "Regex": "model test score:(.*?);"}])
 
     print("SARAH: cross_validation_with_hpo.py in preprocessing folder > train() > tuner is done")
+    
+    print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() > train={train}")
+    print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() > test={test}")
+    
     tuner.fit({"train": train, "test": test}, include_cls_metadata=True)
+    
     print("SARAH: cross_validation_with_hpo.py in preprocessing folder > train() > tuner.fit() is done")
 
     best_traning_job_name = tuner.best_training_job()
-    tuner_job_name = tuner.latest_tuning_job.name  
+    tuner_job_name = tuner.latest_tuning_job.name
     best_performing_job = sm_client.describe_training_job(TrainingJobName=best_traning_job_name)
 
     hyper_params = best_performing_job['HyperParameters']
-    best_hyperparams = {k:v for k,v in hyper_params.items() if not k.startswith("sagemaker_")}
+    best_hyperparams = {k: v for k, v in hyper_params.items() if not k.startswith("sagemaker_")}
 
     jobinfo = {}
     jobinfo['name'] = tuner_job_name
     jobinfo['best_training_job'] = best_traning_job_name
     jobinfo['hyperparams'] = best_hyperparams
+    print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() > jobinfo={jobinfo}")
     metric_value = [x['Value'] for x in best_performing_job['FinalMetricDataList']
                     if x['MetricName'] == objective_metric_name][0]
-    
-    evaluation_metrics = { "multiclass_classification_metrics" : {
-                            "accuracy": {
-                              "value": metric_value,
-                              "standard_deviation": "NaN"
-                            },
-                         }
-                       }
-    os.makedirs(base_dir_evaluation, exist_ok=True) 
+
+    print(f"SARAH: cross_validation_with_hpo.py in preprocessing folder > train() > metric_value={metric_value}")
+
+    evaluation_metrics = {"multiclass_classification_metrics": {
+        "accuracy": {
+            "value": metric_value,
+            "standard_deviation": "NaN"
+        },
+    }
+    }
+    os.makedirs(base_dir_evaluation, exist_ok=True)
     with open(f'{base_dir_evaluation}/evaluation.json', 'w') as f:
         f.write(json.dumps(evaluation_metrics))
 
@@ -134,13 +156,13 @@ def train(train=None,
         f.write(json.dumps(jobinfo))
 
 
-if __name__ =='__main__':
+if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     print("SARAH: cross_validation_with_hpo.py in preprocessing folder > __main__ ")
 
     # Hyperparameters are described here. In this simple example we are just including one hyperparameter.
     parser.add_argument('-k', '--k', type=int, default=5)
-    parser.add_argument('--image-uri', type=str)    
+    parser.add_argument('--image-uri', type=str)
     parser.add_argument('--train', type=str)
     parser.add_argument('--test', type=str)
     parser.add_argument('--instance-type', type=str, default="ml.c4.xlarge")
@@ -148,28 +170,31 @@ if __name__ =='__main__':
     parser.add_argument('--output-path', type=str)
     parser.add_argument('--max-jobs', type=int, default=2)
     parser.add_argument('--max-parallel-jobs', type=int, default=2)
-    parser.add_argument('--min-c', type=int, default=0)
-    parser.add_argument('--max-c', type=int, default=1)
-    parser.add_argument('--min-gamma', type=float, default=0.0001)
-    parser.add_argument('--max-gamma', type=float, default=0.001)
-    parser.add_argument('--gamma-scaling-type', type=str, default="Logarithmic")
     parser.add_argument('--region', type=str, default="us-east-2")
-    
+    parser.add_argument('--subnets', type=str, default="subnet-0724be5e7071e7070")
+    parser.add_argument('--security_group_ids', type=str, default="sg-041054ee4500f96f6")
+    parser.add_argument("--preprocessing_categorical_encoder_min_samples_leaf", type=int)
+    parser.add_argument("--preprocessing_categorical_encoder_smoothing", type=float)
+    parser.add_argument("--over_sampler_sampling_strategy", type=float)
+    parser.add_argument("--estimator_learning_rate", type=float)
+
     args = parser.parse_args()
     os.environ['AWS_DEFAULT_REGION'] = args.region
-    
-    train(train=args.train, 
-          test=args.test, 
-          image_uri=args.image_uri, 
-          instance_type=args.instance_type, 
+
+    train(train=args.train,
+          test=args.test,
+          image_uri=args.image_uri,
+          instance_type=args.instance_type,
           instance_count=args.instance_count,
           output_path=args.output_path,
           k=args.k,
           max_jobs=args.max_jobs,
           max_parallel_jobs=args.max_parallel_jobs,
-          min_c=args.min_c,
-          max_c=args.max_c,
-          min_gamma=args.min_gamma,
-          max_gamma=args.max_gamma,
-          gamma_scaling_type=args.gamma_scaling_type,
-          region=args.region)
+          region=args.region,
+          subnets=args.subnets,
+          security_group_ids=args.security_group_ids,
+          preprocessing_categorical_encoder_min_samples_leaf=args.preprocessing_categorical_encoder_min_samples_leaf,
+          preprocessing_categorical_encoder_smoothing=args.preprocessing_categorical_encoder_smoothing,
+          over_sampler_sampling_strategy=args.over_sampler_sampling_strategy,
+          estimator_learning_rate=args.estimator_learning_rate,
+          )

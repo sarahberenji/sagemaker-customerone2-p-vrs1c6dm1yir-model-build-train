@@ -48,7 +48,7 @@ install("lightgbm")
 # sys.path.append("/usr/local/lib/python3.7/site-packages")
 import os
 import sys
-print(f"SARAH: source_scripts dir sys.patht = {sys.path}")
+print(f"SARAH: sys.path = {sys.path}")
 # sys.path = ['/opt/ml/code', '/opt/ml/code', '/miniconda3/bin', '/miniconda3/lib/python37.zip',
 # '/miniconda3/lib/python3.7', '/miniconda3/lib/python3.7/lib-dynload', '/miniconda3/lib/python3.7/site-packages']
 print(f"SARAH: PYTHONPATH = {os.environ.get('PYTHONPATH', '').split(os.pathsep)}")
@@ -98,17 +98,15 @@ def train(train=None, test=None):
                           'the data specification in S3 was incorrectly specified or the role specified\n' +
                           'does not have permission to access the data.'))
 
-    X_train_df = pd.read_csv(f'{train}/train_x.csv', header=None)
-    y_train_df = pd.read_csv(f'{train}/train_y.csv', header=None)
+    X_train_df = pd.read_csv(f'{train}/train_x.csv')
+    y_train_df = pd.read_csv(f'{train}/train_y.csv')
 
-#     X_train_df = X_train_df.set_index(X_train_df.columns[0])
-#     y_train_df = y_train_df.set_index(y_train_df.columns[0])
+    X_train_df = X_train_df.set_index(X_train_df.columns[0])
+    y_train_df = y_train_df.set_index(y_train_df.columns[0])
 
-#     X_train_df = X_train_df.fillna(0)
-#     y_train_df = y_train_df.fillna(0)
-    print(f"SARAH: scikit_learn_iris.py > train() > NO Removing nulls")
-    print(f"SARAH: scikit_learn_iris.py > train() > X_train_df.columns={X_train_df.columns}")
-    print(f"SARAH: scikit_learn_iris.py > train() > y_train_df.columns={y_train_df.columns}")    
+    X_train_df = X_train_df.fillna(0)
+    y_train_df = y_train_df.fillna(0)
+    print(f"SARAH: scikit_learn_iris.py > train() > Removing nulls")
     print(f"SARAH: scikit_learn_iris.py > train() > X_train_df.shape={X_train_df.shape}")
     print(f"SARAH: scikit_learn_iris.py > train() > y_train_df.shape={y_train_df.shape}")
     print(f"SARAH: scikit_learn_iris.py > train() > X_train_df={X_train_df}")
@@ -127,17 +125,8 @@ def train(train=None, test=None):
             #               C=float(hyperparams['estimator_learning_rate']),
             #               gamma=float(hyperparams['over_sampler_sampling_strategy']),
             #               verbose=1).fit(X_train_df.values, y_train_df.values)
-            lgbm_model = LGBMClassifier(boosting_type='gbdt',
-                                        learning_rate=hyperparams['estimator_learning_rate'],
+            lgbm_model = LGBMClassifier(learning_rate=hyperparams['estimator_learning_rate'],
                                         )
-            # hyperparams = {'_tuning_objective_metric': 'test:score', 'estimator_learning_rate': '0.1',
-            #                'instance_type': 'ml.m5.xlarge', 'k': '3', 'over_sampler_sampling_strategy': '0.35',
-            #                'preprocessing_categorical_encoder_min_samples_leaf': '10000',
-            #                'preprocessing_categorical_encoder_smoothing': '25.0', 'region': 'eu-north-1',
-            #                'security_group_ids': 'sg-041054ee4500f96f6', 'subnets': 'subnet-0724be5e7071e7070',
-            #                'test_src': 's3://mlops-dev-370702650160-eu-north-1-data/lifecycle/60d/customerone-dev-branch/no-revision-provided/2022_09_14_12_26_46/p1033/output/training/test',
-            #                'train_src': 's3://mlops-dev-370702650160-eu-north-1-data/lifecycle/60d/customerone-dev-branch/no-revision-provided/2022_09_14_12_26_46/p1033/output/training/train'}
-            
             lgbm_model.fit(X_train_df.values, y_train_df.values.ravel())
     else:
         # clf = svm.SVC(kernel='linear',

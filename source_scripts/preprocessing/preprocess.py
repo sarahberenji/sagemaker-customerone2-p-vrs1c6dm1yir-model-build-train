@@ -61,6 +61,7 @@ import awswrangler as wr
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
+list_files('/opt/ml/processing/')
 
 # import numpy as np
 import pandas as pd
@@ -112,7 +113,10 @@ if __name__ == "__main__":
     parser.add_argument("--database", type=str, required=True)
     parser.add_argument("--table", type=str, required=True)
     parser.add_argument("--filter", type=str, required=True)
+    parser.add_argument("--ref_period", type=str, required=False)
+    parser.add_argument("--ref_date", type=str, required=False)
     args = parser.parse_args()
+    print(f"SARAH: preprocess.py >>>> args={args}")
 
     boto3.setup_default_session(region_name="eu-north-1")
     ssm = boto3.client('ssm', region_name="eu-north-1")
@@ -123,7 +127,6 @@ if __name__ == "__main__":
     else:
         query_filter = f'WHERE rings > {args.filter}'
 
-    print(f"\n\nSarah SELECT * FROM \"{args.database}\".\"{args.table}\" {query_filter};\', workgroup=f\"{env_type}-athena-workgroup \n\n")
     xsell_dataset = wr.athena.read_sql_query(
         f'SELECT * FROM "{args.database}"."{args.table}" {query_filter};',
         database=args.database,
@@ -206,7 +209,6 @@ if __name__ == "__main__":
         print(f"type(train) is {type(train)}")
 
         logger.info("Writing out datasets to %s.", base_dir)
-        # TODO: sarah, do we have to store the data as csv files?
         pd.DataFrame(train).to_csv(f"{base_dir}/train/train.csv", header=False, index=False)
         # pd.DataFrame(validation).to_csv(f"{base_dir}/validation/validation.csv", header=False, index=False)
         pd.DataFrame(test).to_csv(f"{base_dir}/test/test.csv", header=False, index=False)
@@ -240,7 +242,6 @@ if __name__ == "__main__":
         y_train = partition_train[target_col_name]
 
         if hasattr(cv, "split") and not isinstance(cv, str):
-            print("ifififififififififififififififififififififififififif")
             group_col = (
                 partition_train[group_col_name]
                 if group_col_name is not None
@@ -258,8 +259,11 @@ if __name__ == "__main__":
         print(f"X_train.shape = {X_train.shape}")
 
         y_train = y_train.astype(int)
-        # print(f"test[0]={y_train[0]}, type(y_train[0])={type(y_train[0])}")
         print(f"y_train.shape = {y_train.shape}")
+
+        os.makedirs(f'{base_dir}/train/all', exist_ok=True)
+        pd.DataFrame(X_train).to_csv(f"{base_dir}/train/all/train_x.csv", header=False, index=False)
+        pd.DataFrame(y_train).to_csv(f"{base_dir}/train/all/train_y.csv", header=False, index=False)
 
         for fold_idx in range(0, len(cv_args["cv"])):
             print(f"k fold_idx = {fold_idx}")
@@ -267,24 +271,28 @@ if __name__ == "__main__":
             y_train_fold, y_test_fold = y_train.iloc[cv_args['cv'][fold_idx][0]], y_train.iloc[cv_args['cv'][fold_idx][1]]
 
             print(f"X_train_fold_{fold_idx}={X_train_fold.shape}, X_test_fold_{fold_idx}={X_test_fold.shape}")
-            print(f"y_train_fold_{fold_idx}={y_train_fold.shape}, X_test_fold_{fold_idx}={y_train_fold.shape}")
+            print(f"type(X_train_fold_{fold_idx})={type(X_train_fold)}, type(X_test_fold_{fold_idx})={type(X_test_fold)}")
+            print(f"y_train_fold_{fold_idx}={y_train_fold.shape}, y_test_fold_{fold_idx}={y_test_fold.shape}")
 
             os.makedirs(f'{base_dir}/train/{fold_idx}', exist_ok=True)
-            # np.savetxt(f'{base_dir}/train/{fold_idx}/train_x.csv', X_train_fold, delimiter=',')
-            # np.savetxt(f'{base_dir}/train/{fold_idx}/train_y.csv', y_train_fold, delimiter=',')
             X_train_fold.to_csv(f'{base_dir}/train/{fold_idx}/train_x.csv')
             y_train_fold.to_csv(f'{base_dir}/train/{fold_idx}/train_y.csv')
 
             os.makedirs(f'{base_dir}/test/{fold_idx}', exist_ok=True)
-            # np.savetxt(f'{base_dir}/test/{fold_idx}/test_x.csv', X_test_fold, delimiter=',')
-            # np.savetxt(f'{base_dir}/test/{fold_idx}/test_y.csv', y_test_fold, delimiter=',')
             X_test_fold.to_csv(f'{base_dir}/test/{fold_idx}/test_x.csv')
             y_test_fold.to_csv(f'{base_dir}/test/{fold_idx}/test_y.csv')
 
             print(f"Saving the data for fold={fold_idx} is done!!")
 
     elif args.context == "inference":
-        print("Some mock processing for now")
+        print("SARAH**************************** Start of Inference preprocessing")
+        # skipped drop_invalid_features()
+        # skipped filter_features()
+
+        # filtered the null target rows:
+        df_inference = xsell_dataset[xsell_dataset['tgt_xsell_cust_voice_to_fixed'].notnull()]
+        df_inference_idx = df_inference.reset_index(drop=True)
+        print(f"df_inference.shape={df_inference.shape}, df_inference_idx.shape={df_inference_idx.shape}")
 
         print(f"execution time (UTC): {args.executiontime}")
 
@@ -293,14 +301,16 @@ if __name__ == "__main__":
                         'date_column': 'current_dt',
                         'product_holdings_filter': {'exact_match': {'product_category': 'fixedbroadband'}},
                         'is_deepsell': 'N'}
-        ref_date = '2021-06-30'
+        args.ref_date = None
+        args.ref_period = '2021-06-10'
         data_dictionary = None
 
         # inference_master_table = inference_data
-        inference_data = convert_to_pandas(xsell_dataset, pandas_params, spine_params, target_col_name, data_dictionary, features, ref_date)
+        inference_data = convert_to_pandas(df_inference_idx, pandas_params, spine_params, target_col_name,
+                                           data_dictionary, features, args.ref_date, args.ref_period)
         print(f"inference_master_table inference_data.shape = {inference_data.shape}")
-
-        pd.DataFrame(inference_data).to_csv(f"{base_dir}/inference-test/inference-data.csv", header=False, index=False)
+        os.makedirs(f'{base_dir}/inference-test', exist_ok=True)
+        inference_data.to_csv(f"{base_dir}/inference-test/inference-data.csv", header=False, index=False)
     else:
         logger.info("missing context, allowed values are training or inference")
         sys.exit("missing supported context type")

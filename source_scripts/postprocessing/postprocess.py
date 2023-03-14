@@ -27,23 +27,25 @@ boto3.setup_default_session(region_name="eu-north-1")
 
 if __name__ == "__main__":
 
-    logger.info(">>> Starting postprocessing.")
+    logger.info("SARAH >>> Starting postprocessing.")
     
     parser = argparse.ArgumentParser()
     parser.add_argument("--context", type=str, required=True)
     parser.add_argument("--triggerid", type=str, required=True)
     parser.add_argument("--inferenceoutput", type=str, required=True)
-    parser.add_argument("--sourceaccount", type=str, required=True)
+    # parser.add_argument("--sourceaccount", type=str, required=True)
     args = parser.parse_args()
     
-    print(args)
+    print(f"sarah: args={args}")
 
     STREAM_NAME = "engineering-ml-integration"
     
     ssm = boto3.client('ssm', region_name="eu-north-1")
-    source_account=args.sourceaccount
-    env_type=ssm.get_parameter(Name='EnvType')['Parameter']['Value']
-    ASSUMED_ROLE = f"arn:aws:iam::{source_account}:role/engineering-{env_type}-ml-integration-role"
+    # source_account = args.sourceaccount
+    env_type = ssm.get_parameter(Name='EnvType')['Parameter']['Value']
+    team_name=ssm.get_parameter(Name='TeamName')['Parameter']['Value']
+    STREAM_NAME = f"{team_name}-ml-integration"
+    ASSUMED_ROLE = f"arn:aws:iam::{source_account}:role/{team_name}-{env_type}-ml-integration-role"
 
     sts_client = boto3.client('sts')
     assumed_role_object = sts_client.assume_role(
@@ -65,7 +67,7 @@ if __name__ == "__main__":
     data = {}
     triggerid = str(uuid.uuid4())
     data['trigger_id'] = args.triggerid
-    data['keys']=[f"{args.inferenceoutput}/inference-data.csv.out"]
+    data['keys'] = [f"{args.inferenceoutput}/inference-data.csv.out"]
 
     print(data)
 
